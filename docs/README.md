@@ -27,6 +27,7 @@
 13. [运行与发布](operations.md)
 14. [路线图](roadmap.md)
 15. [本地开发](development.md)
+16. [MVP 开发计划](development-plan.md)
 
 ## 决策管理
 

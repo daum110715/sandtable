@@ -26,6 +26,7 @@ Sandtable 是一个 AI 驱动的历史沙盒：玩家从有出处的历史起点
 - [路线图](docs/roadmap.md)
 - [架构决策](docs/adr/)
 - [本地开发](docs/development.md)
+- [MVP 开发计划](docs/development-plan.md)
 
 ## 工作区
 
