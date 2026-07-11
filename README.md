@@ -2,7 +2,7 @@
 
 Sandtable 是一个 AI 驱动的历史沙盒：玩家从有出处的历史起点出发，通过人物、组织与制度之间的行动，观察一条可解释、可回放的架空世界线如何形成。
 
-项目处于**架构与文档初始化阶段**。当前仓库不包含业务实现；在实现开始前，领域语言、世界演化规则、AI 权限和最小验证范围必须先稳定下来。
+项目处于**技术原型阶段**。移动 PWA、Fastify API、Pi Worker 与共享领域协议框架已建立；历史业务规则尚未实现。
 
 ## 核心承诺
 
@@ -25,10 +25,22 @@ Sandtable 是一个 AI 驱动的历史沙盒：玩家从有出处的历史起点
 - [MVP 范围](docs/mvp.md)
 - [路线图](docs/roadmap.md)
 - [架构决策](docs/adr/)
+- [本地开发](docs/development.md)
+
+## 工作区
+
+- `apps/web`：React + Vite 移动 PWA。
+- `apps/api`：Fastify HTTP API。
+- `apps/worker`：Pi Agent 与后台任务入口。
+- `packages/domain`：共享领域协议。
+
+## 验证
+
+使用 `npm run check` 依次执行类型检查、测试和生产构建。Windows PowerShell 若禁止 `npm.ps1`，使用 `npm.cmd run check`。
 
 ## 当前阶段
 
-当前只允许完善架构、领域模型、决策记录和项目文档。任何具体代码实现都需要项目所有者明确解除该限制，并先有对应的文档依据。
+当前允许搭建技术框架、测试和文档；新增历史业务行为必须先有领域与验收依据。部署和外部资源仍需项目所有者明确授权。
 
 产品与架构基线已于 2026-07-12 按“移动端优先、Web UI、综合最优”原则确认；正式结论以 `docs/decision-register.md` 为准。
 

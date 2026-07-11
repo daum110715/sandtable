@@ -1,0 +1,31 @@
+:root {
+  color: #282118;
+  background: #f4efe4;
+  font-family: Inter, "Noto Sans SC", system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, a { -webkit-tap-highlight-color: transparent; }
+.app-shell { min-height: 100vh; padding-bottom: calc(72px + var(--safe-bottom)); }
+.page { width: min(100%, 720px); margin: 0 auto; padding: 40px 20px; }
+.eyebrow { color: #8d3c22; font-size: .75rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+h1 { margin: 8px 0 12px; font-family: Georgia, "Noto Serif SC", serif; font-size: clamp(2rem, 9vw, 4rem); line-height: 1.05; }
+.lede { max-width: 38rem; color: #5d5142; font-size: 1.05rem; line-height: 1.75; }
+.status-card { margin-top: 32px; padding: 20px; border: 1px solid #d8cbb7; border-radius: 20px; background: rgba(255,255,255,.55); }
+.status-card h2 { margin-top: 0; font-size: 1rem; }
+.status-card dl { display: grid; gap: 12px; margin: 0; }
+.status-card dl div { display: flex; justify-content: space-between; gap: 24px; }
+.status-card dt { color: #6f6251; }
+.status-card dd { margin: 0; font-weight: 700; }
+.bottom-nav { position: fixed; inset: auto 0 0; z-index: 10; display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 8px calc(8px + var(--safe-bottom)); border-top: 1px solid #d8cbb7; background: rgba(244,239,228,.94); backdrop-filter: blur(16px); }
+.bottom-nav a { display: grid; min-height: 48px; place-items: center; border-radius: 14px; color: #6f6251; font-size: .82rem; font-weight: 650; text-decoration: none; }
+.bottom-nav a.active { color: #fffaf0; background: #7b2d1d; }
+.skip-link { position: fixed; left: 12px; top: -100px; z-index: 20; padding: 12px 16px; color: white; background: #15110c; }
+.skip-link:focus { top: 12px; }
+@media (min-width: 768px) { .page { padding-top: 72px; } .status-card dl { grid-template-columns: repeat(3, 1fr); } .status-card dl div { display: block; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+

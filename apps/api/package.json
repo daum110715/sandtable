@@ -1,0 +1,16 @@
+{
+  "name": "@sandtable/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run --config ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "@sandtable/domain": "*",
+    "fastify": "^5.10.0"
+  }
+}
