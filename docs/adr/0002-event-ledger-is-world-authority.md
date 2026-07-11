@@ -4,7 +4,7 @@
 
 ## Status
 
-Proposed — 待项目所有者确认
+Accepted — 2026-07-12
 
 ## Consequences
 
