@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted — 2026-07-12
+Accepted — 2026-07-12（1.0 修订：用户完整权限保留；“每次改写创建分支”改为单条演进世界线 + 事件日志回溯，显式分支留待后续，见 [ADR-0006](0006-ai-realtime-deduction-with-structured-state.md)）
 
 ## Consequences
 
