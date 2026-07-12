@@ -87,8 +87,10 @@ export {
 export type { BuildEventArgs } from "./m1-loop.js";
 export { applyStateChange, applyStateChanges, appendEvent, replay, buildEvent } from "./m1-loop.js";
 
-// M2 内存世界状态数据库 / 事件日志 / 推演编排
+// 世界状态数据库 / 事件日志端口 + 内存实现 / 推演编排
+export type { WorldStateStore } from "./world-state-store.js";
 export { InMemoryWorldStateStore } from "./world-state-store.js";
+export type { EventLog } from "./event-log.js";
 export { InMemoryEventLog } from "./event-log.js";
 export type { DeduceCommand, DeduceResult, DeductionOrchestratorOptions } from "./orchestrator.js";
 export { DeductionOrchestrator } from "./orchestrator.js";

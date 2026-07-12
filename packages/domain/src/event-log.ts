@@ -1,9 +1,19 @@
-// DEV-007 内存事件日志：只追加、不可原地修改、按顺序读取；支持按 commandId 查找。
+// DEV-007 事件日志端口 + 内存实现：只追加、不可原地修改、按顺序读取；支持按 commandId 查找。
 
 import type { CommandId } from "./ids.js";
 import type { DeductionEvent } from "./events.js";
 
-export class InMemoryEventLog {
+/** 事件日志端口（M2 内存 / M3 SQLite 等实现）。 */
+export interface EventLog {
+  append(event: DeductionEvent): void;
+  all(): readonly DeductionEvent[];
+  at(index: number): DeductionEvent | undefined;
+  last(): DeductionEvent | undefined;
+  readonly length: number;
+  findByCommandId(commandId: CommandId): DeductionEvent | undefined;
+}
+
+export class InMemoryEventLog implements EventLog {
   #events: DeductionEvent[] = [];
   #byCommandId = new Map<string, DeductionEvent>();
 

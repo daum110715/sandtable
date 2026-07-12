@@ -3,11 +3,9 @@
   "compilerOptions": {
     "composite": true,
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": ["node"]
   },
-  "references": [
-    { "path": "../../packages/domain" },
-    { "path": "../../packages/persistence" }
-  ],
+  "references": [{ "path": "../domain" }],
   "include": ["src"]
 }

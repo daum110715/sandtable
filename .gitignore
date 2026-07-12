@@ -11,3 +11,9 @@ coverage/
 *.log
 .DS_Store
 Thumbs.db
+# M3 SQLite 本地数据（路径可配置；默认 data/）
+data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm

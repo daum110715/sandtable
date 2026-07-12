@@ -1,5 +1,6 @@
 // DEV-008 / DEV-009 推演编排：接收改写 → 演员推演 → 记录员写回 → 逻辑事务提交状态与事件。
 // 幂等：相同 commandId 不重复产生事件、不二次调用 Agent。
+// M3：通过 runInTransaction 与持久化 adapter 对齐真实 DB 事务。
 
 import type { ActorAgent, ActorOutput, RecorderAgent, RecorderOutput } from "./agents.js";
 import type { DeductionEvent, Rewrite } from "./events.js";
@@ -11,8 +12,8 @@ import {
 } from "./invariants.js";
 import { applyStateChanges, buildEvent } from "./m1-loop.js";
 import type { WorldState } from "./world-state.js";
-import type { InMemoryEventLog } from "./event-log.js";
-import type { InMemoryWorldStateStore } from "./world-state-store.js";
+import type { EventLog } from "./event-log.js";
+import type { WorldStateStore } from "./world-state-store.js";
 
 export interface DeduceCommand {
   readonly commandId: CommandId;
@@ -30,23 +31,29 @@ export interface DeduceResult {
 }
 
 export interface DeductionOrchestratorOptions {
-  readonly store: InMemoryWorldStateStore;
-  readonly eventLog: InMemoryEventLog;
+  readonly store: WorldStateStore;
+  readonly eventLog: EventLog;
   readonly actor: ActorAgent;
   readonly recorder: RecorderAgent;
   /** 可选：注入 EventId 生成，便于测试。 */
   readonly nextEventId?: () => EventId;
   /** 可选：注入记录时刻。 */
   readonly now?: () => string;
+  /**
+   * 逻辑/物理事务包装。内存默认直接执行；
+   * SQLite 传入 db.transaction 以保证状态与事件同提交。
+   */
+  readonly runInTransaction?: <T>(fn: () => T) => T;
 }
 
 export class DeductionOrchestrator {
-  readonly #store: InMemoryWorldStateStore;
-  readonly #eventLog: InMemoryEventLog;
+  readonly #store: WorldStateStore;
+  readonly #eventLog: EventLog;
   readonly #actor: ActorAgent;
   readonly #recorder: RecorderAgent;
   readonly #nextEventId: () => EventId;
   readonly #now: () => string;
+  readonly #runInTransaction: <T>(fn: () => T) => T;
   #eventSeq = 0;
 
   constructor(options: DeductionOrchestratorOptions) {
@@ -61,6 +68,7 @@ export class DeductionOrchestrator {
         return asEventId(`event-${this.#eventSeq}`);
       });
     this.#now = options.now ?? (() => new Date().toISOString());
+    this.#runInTransaction = options.runInTransaction ?? (<T>(fn: () => T) => fn());
   }
 
   async deduce(command: DeduceCommand): Promise<DeduceResult> {
@@ -111,9 +119,11 @@ export class DeductionOrchestrator {
       ...(command.sessionId !== undefined ? { sessionId: command.sessionId } : {}),
     });
 
-    // 逻辑事务提交点：状态与事件同步前进；此前失败则两者均未改。
-    this.#store.replace(nextState);
-    this.#eventLog.append(event);
+    // 事务提交点：状态与事件同步前进；此前失败则两者均未改。
+    this.#runInTransaction(() => {
+      this.#store.replace(nextState);
+      this.#eventLog.append(event);
+    });
 
     return {
       outcome: "applied",
