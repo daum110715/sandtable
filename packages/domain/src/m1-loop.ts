@@ -1,7 +1,8 @@
-// M1 闭环 helper（示例级）。M2 将以正式内存世界状态数据库 + 事件日志 + 推演编排替代。
-// 这里提供不可变的状态变更应用、仅追加的事件日志与按序回溯，用于验证协议闭环。
+// 状态应用内核：不可变 StateChange 应用、仅追加事件日志与按序回溯。
+// M1 用这些函数验证协议闭环；M2 的 Store / EventLog / Orchestrator 复用同一内核。
 
 import type {
+  CommandId,
   EventId,
   FactionId,
   LocationId,
@@ -139,6 +140,7 @@ export interface BuildEventArgs {
   readonly stateChanges: readonly StateChange[];
   readonly previousEventId?: EventId;
   readonly sessionId?: SessionId;
+  readonly commandId?: CommandId;
   readonly agentVersion?: string;
   readonly recordedAt?: string;
 }
@@ -157,5 +159,6 @@ export const buildEvent = (args: BuildEventArgs): DeductionEvent => ({
       ? { previousEventId: args.previousEventId, rewrite: args.rewrite }
       : { rewrite: args.rewrite },
   ...(args.sessionId !== undefined ? { sessionId: args.sessionId } : {}),
+  ...(args.commandId !== undefined ? { commandId: args.commandId } : {}),
   ...(args.agentVersion !== undefined ? { agentVersion: args.agentVersion } : {}),
 });

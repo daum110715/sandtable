@@ -5,6 +5,7 @@
 
 import type {
   AgentId,
+  CommandId,
   EventId,
   FactionId,
   LocationId,
@@ -64,6 +65,8 @@ export interface DeductionEvent {
   readonly id: EventId;
   readonly worldlineId: WorldlineId;
   readonly sessionId?: SessionId;
+  /** 改写提交幂等键；编排层提交时写入，用于重复命令短路。 */
+  readonly commandId?: CommandId;
   readonly simulationTime: SimulationTime;
   readonly recordedAt: string;
   readonly rewrite: Rewrite;

@@ -21,6 +21,7 @@ export type {
   SessionId,
   AgentId,
   SimulationTime,
+  CommandId,
   ActorId,
 } from "./ids.js";
 export {
@@ -34,6 +35,7 @@ export {
   asSessionId,
   asAgentId,
   asSimulationTime,
+  asCommandId,
 } from "./ids.js";
 
 // DEV-001 世界状态 schema
@@ -81,9 +83,15 @@ export {
   assertDeepEqual,
 } from "./invariants.js";
 
-// 闭环 helper
+// 状态应用内核（M1 闭环 helper；M2 Store/Orchestrator 复用）
 export type { BuildEventArgs } from "./m1-loop.js";
 export { applyStateChange, applyStateChanges, appendEvent, replay, buildEvent } from "./m1-loop.js";
+
+// M2 内存世界状态数据库 / 事件日志 / 推演编排
+export { InMemoryWorldStateStore } from "./world-state-store.js";
+export { InMemoryEventLog } from "./event-log.js";
+export type { DeduceCommand, DeduceResult, DeductionOrchestratorOptions } from "./orchestrator.js";
+export { DeductionOrchestrator } from "./orchestrator.js";
 
 // DEV-005 场景与内存桩
 export { chibiInitialState, chibiRewrites, chibiWorldlineId, chibiInitialTime } from "./scenarios/chibi.js";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asPersonId, asEventId, asWorldlineId, asAgentId } from "./ids.js";
+import { asPersonId, asEventId, asWorldlineId, asAgentId, asCommandId } from "./ids.js";
 
 describe("branded ids", () => {
   it("constructors return the underlying string", () => {
@@ -7,6 +7,7 @@ describe("branded ids", () => {
     expect(asEventId("e1")).toBe("e1");
     expect(asWorldlineId("w1")).toBe("w1");
     expect(asAgentId("a1")).toBe("a1");
+    expect(asCommandId("cmd-1")).toBe("cmd-1");
   });
 
   it("branded ids are strings at runtime", () => {
