@@ -2,7 +2,7 @@ import { NavLink, Route, Routes } from "react-router-dom";
 
 export const navigationSections = [
   { path: "/", label: "世界", title: "赤壁 · 建安十三年" },
-  { path: "/actions", label: "行动", title: "行动意图" },
+  { path: "/rewrite", label: "改写", title: "Root 历史改写" },
   { path: "/timeline", label: "时间线", title: "世界线事件" },
   { path: "/archive", label: "档案", title: "历史档案" }
 ] as const;

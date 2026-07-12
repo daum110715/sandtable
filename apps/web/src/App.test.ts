@@ -5,7 +5,7 @@ describe("mobile navigation framework", () => {
   it("keeps the four primary destinations in thumb navigation", () => {
     expect(navigationSections.map(({ path }) => path)).toEqual([
       "/",
-      "/actions",
+      "/rewrite",
       "/timeline",
       "/archive"
     ]);
