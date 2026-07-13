@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "node --env-file-if-exists=../../.env --import tsx/esm ../../node_modules/tsx/dist/cli.mjs watch src/server.ts",
     "build": "tsc -b",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run --config ../../vitest.config.ts"

@@ -16,8 +16,24 @@ export interface DeepSeekClientOptions {
   readonly fetchImpl?: typeof fetch;
 }
 
-const DEFAULT_BASE = "https://api.deepseek.com";
+/** OpenAI 兼容根路径须含 `/v1`，否则部分网关会 403。 */
+const DEFAULT_BASE = "https://api.deepseek.com/v1";
 const DEFAULT_MODEL = "deepseek-v4-flash";
+
+/**
+ * 规范化 base URL：去尾斜杠。
+ * OpenAI 兼容网关（含 api.b.ai、api.deepseek.com）必须带 `/v1`，
+ * 否则会 403：仅允许 /v1/chat/completions 等推理路径。
+ * 已含 `/vN` 或 `/anthropic` 的自定义网关原样保留。
+ */
+export const normalizeDeepSeekBaseUrl = (raw: string): string => {
+  const base = raw.trim().replace(/\/+$/, "");
+  if (!base) return DEFAULT_BASE;
+  if (/\/v\d+(?:\/|$)/i.test(base) || /\/anthropic$/i.test(base)) {
+    return base;
+  }
+  return `${base}/v1`;
+};
 
 export class DeepSeekClient implements LlmClient {
   readonly provider = "deepseek";
@@ -32,7 +48,7 @@ export class DeepSeekClient implements LlmClient {
       throw new AgentError("config", "DEEPSEEK_API_KEY is empty");
     }
     this.#apiKey = options.apiKey;
-    this.#baseUrl = (options.baseUrl ?? DEFAULT_BASE).replace(/\/$/, "");
+    this.#baseUrl = normalizeDeepSeekBaseUrl(options.baseUrl ?? DEFAULT_BASE);
     this.model = options.model ?? DEFAULT_MODEL;
     this.#defaultTimeoutMs = options.defaultTimeoutMs ?? 60_000;
     this.#fetch = options.fetchImpl ?? fetch;

@@ -18,9 +18,40 @@
       rel="stylesheet"
     />
     <title>分岔 · 通用世界推演</title>
+    <style>
+      /* 首屏兜底：JS 未跑起来时也能看见说明，避免「只有网格」 */
+      #boot-fallback {
+        font-family: system-ui, "Microsoft YaHei", sans-serif;
+        max-width: 28rem;
+        margin: 4rem auto;
+        padding: 1.5rem;
+        color: #1a1714;
+        background: #fff;
+        border: 2px solid #1a1714;
+        line-height: 1.6;
+      }
+      #boot-fallback h1 {
+        font-size: 1.25rem;
+        margin: 0 0 0.75rem;
+      }
+      #boot-fallback p {
+        margin: 0 0 0.5rem;
+      }
+      #boot-fallback code {
+        font-family: ui-monospace, monospace;
+        background: #f3eee4;
+        padding: 0.1em 0.35em;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot-fallback">
+        <h1>分岔 · 正在加载</h1>
+        <p>若超过几秒仍停在此页，请强制刷新（Ctrl+Shift+R）。</p>
+        <p>正确地址：<code>http://127.0.0.1:5180/</code></p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

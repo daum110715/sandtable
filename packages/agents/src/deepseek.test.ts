@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { AgentError } from "./errors.js";
-import { DeepSeekClient, createDeepSeekClientFromEnv } from "./deepseek.js";
+import {
+  DeepSeekClient,
+  createDeepSeekClientFromEnv,
+  normalizeDeepSeekBaseUrl,
+} from "./deepseek.js";
 
 describe("DeepSeekClient", () => {
   it("posts chat completions and returns content", async () => {
@@ -28,7 +32,9 @@ describe("DeepSeekClient", () => {
     expect(result.text).toBe('{"ok":true}');
     expect(fetchImpl).toHaveBeenCalledOnce();
     const call = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
-    expect(String(call[0])).toContain("/chat/completions");
+    expect(String(call[0])).toBe(
+      "https://api.deepseek.com/v1/chat/completions",
+    );
     expect(call[1].headers).toMatchObject({
       Authorization: "Bearer sk-test",
     });
@@ -133,7 +139,7 @@ describe("DeepSeekClient", () => {
     });
     await client.complete({ messages: [{ role: "user", content: "x" }] });
     const url = (fetchImpl.mock.calls[0] as unknown as [string])[0];
-    expect(url).toBe("https://custom.api.com/chat/completions");
+    expect(url).toBe("https://custom.api.com/v1/chat/completions");
   });
 
   it("uses custom model", async () => {
@@ -183,5 +189,31 @@ describe("createDeepSeekClientFromEnv", () => {
     });
     expect(client).toBeDefined();
     expect(client!.model).toBe("custom-v1");
+  });
+});
+
+describe("normalizeDeepSeekBaseUrl", () => {
+  it("appends /v1 for official host without version", () => {
+    expect(normalizeDeepSeekBaseUrl("https://api.deepseek.com")).toBe(
+      "https://api.deepseek.com/v1",
+    );
+  });
+
+  it("keeps existing /v1", () => {
+    expect(normalizeDeepSeekBaseUrl("https://api.deepseek.com/v1/")).toBe(
+      "https://api.deepseek.com/v1",
+    );
+  });
+
+  it("does not alter custom versioned gateways", () => {
+    expect(
+      normalizeDeepSeekBaseUrl("https://ark.example.com/api/v3"),
+    ).toBe("https://ark.example.com/api/v3");
+  });
+
+  it("appends /v1 for OpenAI-compatible proxy hosts like api.b.ai", () => {
+    expect(normalizeDeepSeekBaseUrl("https://api.b.ai")).toBe(
+      "https://api.b.ai/v1",
+    );
   });
 });
