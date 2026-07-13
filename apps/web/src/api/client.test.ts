@@ -7,6 +7,8 @@ import {
   fetchEvents,
   resetSession,
   deduceOnce,
+  deduceStreamOnce,
+  deduceStream,
   newCommandId,
 } from "./client.js";
 
@@ -17,7 +19,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.restoreAllMocks();
+  mockFetch.mockReset();
 });
 
 const jsonResponse = (data: unknown, status = 200) =>
@@ -31,6 +33,36 @@ const errorResponse = (status: number, body: unknown) =>
     status,
     headers: { "Content-Type": "application/json" },
   });
+
+/** Build a Response with a ReadableStream body for SSE tests. */
+const sseResponse = (blocks: string[]) => {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      for (const block of blocks) {
+        controller.enqueue(encoder.encode(block));
+      }
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: { "Content-Type": "text/event-stream" },
+  });
+};
+
+const deduceResult = {
+  outcome: "applied" as const,
+  event: {
+    id: "e1",
+    simulationTime: "t1",
+    rewrite: { text: "r", submittedAt: "" },
+    narrative: { text: "n" },
+    stateChanges: [],
+    recordedAt: "",
+  },
+  worldState: { worldlineId: "w1", simulationTime: "t1" },
+};
 
 describe("ApiError", () => {
   it("marks 5xx as retryable by default", () => {
@@ -58,6 +90,11 @@ describe("ApiError", () => {
   it("uses body.error as message", () => {
     const e = new ApiError(422, { error: "validation failed" });
     expect(e.message).toBe("validation failed");
+  });
+
+  it("does not set code when body.code is undefined", () => {
+    const e = new ApiError(500, { error: "err" });
+    expect(e.code).toBeUndefined();
   });
 });
 
@@ -102,6 +139,17 @@ describe("withRetry", () => {
     });
     await expect(withRetry(fn, { attempts: 3 })).rejects.toThrow("network");
     expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("defaults to 2 attempts", async () => {
+    let n = 0;
+    const fn = vi.fn(async () => {
+      n += 1;
+      if (n === 1) throw new ApiError(503, { error: "slow", retryable: true });
+      return "ok";
+    });
+    await expect(withRetry(fn)).resolves.toBe("ok");
+    expect(fn).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -157,11 +205,6 @@ describe("resetSession", () => {
 
 describe("deduceOnce", () => {
   it("posts deduce request and returns result", async () => {
-    const deduceResult = {
-      outcome: "applied",
-      event: { id: "e1" },
-      worldState: {},
-    };
     mockFetch.mockResolvedValueOnce(jsonResponse(deduceResult));
     const result = await deduceOnce({
       commandId: "cmd-1",
@@ -177,6 +220,153 @@ describe("deduceOnce", () => {
     await expect(
       deduceOnce({ commandId: "cmd-1", rewriteText: "test" }),
     ).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe("deduceStreamOnce", () => {
+  it("parses SSE progress and result events", async () => {
+    const blocks = [
+      'event: progress\ndata: {"phase":"accepted","message":"已接收"}\n\n',
+      'event: progress\ndata: {"phase":"deducing","message":"推演中"}\n\n',
+      `event: result\ndata: ${JSON.stringify(deduceResult)}\n\n`,
+    ];
+    mockFetch.mockResolvedValueOnce(sseResponse(blocks));
+
+    const onProgress = vi.fn();
+    const onResult = vi.fn();
+    const result = await deduceStreamOnce(
+      { commandId: "cmd-1", rewriteText: "test" },
+      { onProgress, onResult },
+    );
+
+    expect(onProgress).toHaveBeenCalledTimes(2);
+    expect(onProgress).toHaveBeenCalledWith("accepted", "已接收");
+    expect(onProgress).toHaveBeenCalledWith("deducing", "推演中");
+    expect(onResult).toHaveBeenCalledOnce();
+    expect(result).toEqual(deduceResult);
+  });
+
+  it("throws ApiError on SSE error event", async () => {
+    const blocks = [
+      'event: error\ndata: {"error":"rate limited","code":"rate_limited","retryable":true}\n\n',
+    ];
+    mockFetch.mockResolvedValueOnce(sseResponse(blocks));
+
+    const onError = vi.fn();
+    await expect(
+      deduceStreamOnce(
+        { commandId: "cmd-1", rewriteText: "test" },
+        { onError },
+      ),
+    ).rejects.toMatchObject({ code: "rate_limited", status: 429 });
+    expect(onError).toHaveBeenCalledOnce();
+  });
+
+  it("maps validation_error to 400", async () => {
+    const blocks = [
+      'event: error\ndata: {"error":"bad input","code":"validation_error","retryable":false}\n\n',
+    ];
+    mockFetch.mockResolvedValueOnce(sseResponse(blocks));
+    await expect(
+      deduceStreamOnce({ commandId: "cmd-1", rewriteText: "test" }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("falls back to deduceOnce when SSE fetch fails", async () => {
+    mockFetch.mockRejectedValueOnce(new TypeError("fetch failed"));
+    mockFetch.mockResolvedValueOnce(jsonResponse(deduceResult));
+
+    const result = await deduceStreamOnce({
+      commandId: "cmd-1",
+      rewriteText: "test",
+    });
+    expect(result).toEqual(deduceResult);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls back to deduceOnce when body is null", async () => {
+    const res = new Response(null, { status: 200 });
+    mockFetch.mockResolvedValueOnce(res);
+    mockFetch.mockResolvedValueOnce(jsonResponse(deduceResult));
+
+    const result = await deduceStreamOnce({
+      commandId: "cmd-1",
+      rewriteText: "test",
+    });
+    expect(result).toEqual(deduceResult);
+  });
+
+  it("throws 502 when SSE ends without result", async () => {
+    mockFetch.mockResolvedValueOnce(sseResponse([]));
+    await expect(
+      deduceStreamOnce({ commandId: "cmd-1", rewriteText: "test" }),
+    ).rejects.toMatchObject({ status: 502 });
+  });
+
+  it("sends correct request headers", async () => {
+    const blocks = [`event: result\ndata: ${JSON.stringify(deduceResult)}\n\n`];
+    mockFetch.mockResolvedValueOnce(sseResponse(blocks));
+    await deduceStreamOnce({ commandId: "cmd-1", rewriteText: "test" });
+    const call = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(call[1].headers).toMatchObject({
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    });
+    expect(call[1].method).toBe("POST");
+  });
+
+  it("parses multi-line data fields", async () => {
+    const multiLineData = JSON.stringify({
+      ...deduceResult,
+      extra: "line1\nline2",
+    });
+    const blocks = [`event: result\ndata: ${multiLineData}\n\n`];
+    mockFetch.mockResolvedValueOnce(sseResponse(blocks));
+    const result = await deduceStreamOnce({
+      commandId: "cmd-1",
+      rewriteText: "test",
+    });
+    expect(result.outcome).toBe("applied");
+  });
+
+  it("ignores blocks with no data lines", async () => {
+    const blocks = [
+      "event: progress\n\n",
+      `event: result\ndata: ${JSON.stringify(deduceResult)}\n\n`,
+    ];
+    mockFetch.mockResolvedValueOnce(sseResponse(blocks));
+    const result = await deduceStreamOnce({
+      commandId: "cmd-1",
+      rewriteText: "test",
+    });
+    expect(result).toEqual(deduceResult);
+  });
+});
+
+describe("deduceStream", () => {
+  it("wraps deduceStreamOnce with retry on retryable error", async () => {
+    let n = 0;
+    mockFetch.mockImplementation(async () => {
+      n += 1;
+      if (n === 1)
+        return sseResponse([
+          'event: error\ndata: {"error":"slow","code":"network","retryable":true}\n\n',
+        ]);
+      return sseResponse([
+        `event: result\ndata: ${JSON.stringify(deduceResult)}\n\n`,
+      ]);
+    });
+
+    const onProgress = vi.fn();
+    const result = await deduceStream(
+      { commandId: "cmd-1", rewriteText: "test" },
+      { onProgress },
+    );
+    expect(result).toEqual(deduceResult);
+    expect(onProgress).toHaveBeenCalledWith(
+      "deducing",
+      expect.stringContaining("自动重试"),
+    );
   });
 });
 
