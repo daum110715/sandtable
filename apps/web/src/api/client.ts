@@ -66,8 +66,30 @@ export interface StreamHandlers {
   onError?: (err: ApiError) => void;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** DEV-027：可重试错误最多再试 attempts 次（含首次），同一 commandId 保证幂等。 */
+export const withRetry = async <T>(
+  fn: () => Promise<T>,
+  options: { attempts?: number; onRetry?: (err: ApiError, attempt: number) => void } = {},
+): Promise<T> => {
+  const attempts = options.attempts ?? 2;
+  let last: unknown;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      last = e;
+      if (!(e instanceof ApiError) || !e.retryable || i === attempts) throw e;
+      options.onRetry?.(e, i);
+      await sleep(Math.min(1000 * i, 3000));
+    }
+  }
+  throw last;
+};
+
 /** DEV-023 SSE 推演；失败时回退普通 POST。 */
-export const deduceStream = async (
+export const deduceStreamOnce = async (
   input: { commandId: string; rewriteText: string },
   handlers: StreamHandlers = {},
 ): Promise<DeduceSuccess> => {
@@ -79,7 +101,6 @@ export const deduceStream = async (
     });
 
     if (!res.ok || !res.body) {
-      // fallback
       return deduceOnce(input);
     }
 
@@ -108,7 +129,9 @@ export const deduceStream = async (
         result = data as unknown as DeduceSuccess;
         handlers.onResult?.(result);
       } else if (event === "error") {
-        streamError = new ApiError(503, data as ApiErrorBody);
+        const status =
+          data.code === "rate_limited" ? 429 : data.code === "validation_error" ? 400 : 503;
+        streamError = new ApiError(status, data as ApiErrorBody);
         handlers.onError?.(streamError);
       }
     };
@@ -133,6 +156,18 @@ export const deduceStream = async (
     return deduceOnce(input);
   }
 };
+
+/** 带一次自动重试的推演（同一 commandId）。 */
+export const deduceStream = async (
+  input: { commandId: string; rewriteText: string },
+  handlers: StreamHandlers = {},
+): Promise<DeduceSuccess> =>
+  withRetry(() => deduceStreamOnce(input, handlers), {
+    attempts: 2,
+    onRetry: (_err, attempt) => {
+      handlers.onProgress?.("deducing", `网络或模型繁忙，自动重试（${attempt}）…`);
+    },
+  });
 
 export const deduceOnce = async (input: {
   commandId: string;

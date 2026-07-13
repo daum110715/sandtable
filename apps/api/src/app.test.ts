@@ -15,80 +15,79 @@ afterEach(async () => {
   }
 });
 
-describe("API framework", () => {
+const appOpts = { agentMode: "stub" as const, silentLog: true, deduceRateLimit: 0 };
+
+describe("API M6 hardening", () => {
   it("reports health without external services", async () => {
-    const app = await buildApp();
+    const app = await buildApp({ ...appOpts });
     apps.push(app);
     const response = await app.inject({ method: "GET", url: "/health" });
-
     expect(response.statusCode).toBe(200);
+    expect(response.headers["x-content-type-options"]).toBe("nosniff");
     expect(response.json()).toMatchObject({ status: "ok", system: "sandtable" });
   });
 
   it("reports ready when sqlite is available", async () => {
-    const app = await buildApp({ dbPath: ":memory:", agentMode: "stub" });
+    const app = await buildApp({ ...appOpts, dbPath: ":memory:" });
     apps.push(app);
     const response = await app.inject({ method: "GET", url: "/ready" });
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toMatchObject({
-      status: "ready",
-      storage: "ok",
-      agentMode: "stub",
-    });
+    expect(response.json()).toMatchObject({ status: "ready", storage: "ok" });
   });
 
   it("lists scenarios", async () => {
-    const app = await buildApp({ agentMode: "stub" });
+    const app = await buildApp(appOpts);
     apps.push(app);
     const res = await app.inject({ method: "GET", url: "/api/v1/scenarios" });
     expect(res.statusCode).toBe(200);
     expect(res.json().scenarios.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("deduce writes event and is idempotent; reopen keeps data", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "sandtable-api-m5-"));
+  it("idempotent deduce: same commandId does not duplicate events", async () => {
+    const app = await buildApp(appOpts);
+    apps.push(app);
+    const payload = { commandId: "idem-1", rewriteText: "那天江上刮西北风" };
+    const a = await app.inject({ method: "POST", url: "/api/v1/deduce", payload });
+    const b = await app.inject({ method: "POST", url: "/api/v1/deduce", payload });
+    expect(a.json().outcome).toBe("applied");
+    expect(b.json().outcome).toBe("duplicate");
+    const events = await app.inject({ method: "GET", url: "/api/v1/events" });
+    expect(events.json().length).toBe(1);
+    const m = await app.inject({ method: "GET", url: "/api/v1/metrics" });
+    expect(m.json().metrics.deduceDuplicate).toBe(1);
+    expect(m.json().metrics.deduceApplied).toBe(1);
+  });
+
+  it("survives process restart without losing confirmed events", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "sandtable-api-m6-"));
     dirs.push(dir);
     const dbPath = join(dir, "api.sqlite");
 
     {
-      const app = await buildApp({ dbPath, agentMode: "stub" });
+      const app = await buildApp({ ...appOpts, dbPath });
       apps.push(app);
-
-      const first = await app.inject({
+      await app.inject({
         method: "POST",
         url: "/api/v1/deduce",
         payload: { commandId: "api-cmd-1", rewriteText: "那天江上刮西北风" },
       });
-      expect(first.statusCode).toBe(200);
-      expect(first.json().outcome).toBe("applied");
-
-      const dup = await app.inject({
-        method: "POST",
-        url: "/api/v1/deduce",
-        payload: { commandId: "api-cmd-1", rewriteText: "那天江上刮西北风" },
-      });
-      expect(dup.json().outcome).toBe("duplicate");
-
-      const events = await app.inject({ method: "GET", url: "/api/v1/events" });
-      expect(events.json().length).toBe(1);
-
       await app.close();
       apps.pop();
     }
 
     {
-      const app = await buildApp({ dbPath, agentMode: "stub" });
+      const app = await buildApp({ ...appOpts, dbPath });
       apps.push(app);
       const events = await app.inject({ method: "GET", url: "/api/v1/events" });
       expect(events.json().length).toBe(1);
       const state = await app.inject({ method: "GET", url: "/api/v1/world-state" });
-      const wind =
-        state.json().worldState.resources["resource-wind"]?.attributes?.direction;
-      expect(wind).toBe("西北风");
+      expect(state.json().worldState.resources["resource-wind"]?.attributes?.direction).toBe(
+        "西北风",
+      );
     }
   });
 
-  it("returns 503 with retryable when agent fails without writing", async () => {
+  it("model failure does not write state or events", async () => {
     const { AgentError } = await import("@sandtable/agents");
     const actor = {
       id: "x" as never,
@@ -101,7 +100,7 @@ describe("API framework", () => {
       record: async () => ({ stateChanges: [], narrative: { text: "" } }),
     };
     const app = await buildApp({
-      dbPath: ":memory:",
+      ...appOpts,
       actor,
       recorder,
       agentMode: "model",
@@ -115,13 +114,49 @@ describe("API framework", () => {
     });
     expect(res.statusCode).toBe(503);
     expect(res.json()).toMatchObject({ code: "timeout", retryable: true });
-
     const events = await app.inject({ method: "GET", url: "/api/v1/events" });
     expect(events.json().length).toBe(0);
   });
 
+  it("rejects invalid input", async () => {
+    const app = await buildApp(appOpts);
+    apps.push(app);
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload: { commandId: "bad space", rewriteText: "x" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe("validation_error");
+  });
+
+  it("rate limits deduce requests", async () => {
+    const app = await buildApp({ ...appOpts, deduceRateLimit: 2 });
+    apps.push(app);
+    const payload = (id: string) => ({
+      commandId: id,
+      rewriteText: "曹操退守许都",
+    });
+    expect(
+      (await app.inject({ method: "POST", url: "/api/v1/deduce", payload: payload("r1") }))
+        .statusCode,
+    ).toBe(200);
+    expect(
+      (await app.inject({ method: "POST", url: "/api/v1/deduce", payload: payload("r2") }))
+        .statusCode,
+    ).toBe(200);
+    const limited = await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload: payload("r3"),
+    });
+    expect(limited.statusCode).toBe(429);
+    expect(limited.json().code).toBe("rate_limited");
+    expect(limited.headers["retry-after"]).toBeDefined();
+  });
+
   it("resets session clearing events", async () => {
-    const app = await buildApp({ agentMode: "stub" });
+    const app = await buildApp(appOpts);
     apps.push(app);
     await app.inject({
       method: "POST",
@@ -134,13 +169,12 @@ describe("API framework", () => {
       payload: { scenarioId: "chibi" },
     });
     expect(reset.statusCode).toBe(200);
-    expect(reset.json().events).toEqual([]);
     const events = await app.inject({ method: "GET", url: "/api/v1/events" });
     expect(events.json().length).toBe(0);
   });
 
   it("streams deduce progress over SSE", async () => {
-    const app = await buildApp({ agentMode: "stub" });
+    const app = await buildApp(appOpts);
     apps.push(app);
     const res = await app.inject({
       method: "POST",

@@ -1,5 +1,5 @@
 import cors from "@fastify/cors";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import {
   DeductionOrchestrator,
   asCommandId,
@@ -13,22 +13,32 @@ import {
 } from "@sandtable/domain";
 import { isAgentError, resolveAgents } from "@sandtable/agents";
 import { openSqlitePersistence, type SqlitePersistence } from "@sandtable/persistence";
+import { logStructured } from "./log.js";
+import { ApiMetrics } from "./metrics.js";
+import {
+  DEFAULT_DEDUCE_RATE_LIMIT,
+  SlidingWindowRateLimiter,
+  validateDeduceBody,
+} from "./security.js";
 
 export interface BuildAppOptions {
-  /** SQLite 路径；`:memory:` 或文件。默认内存，测试与无外部服务可用。 */
   readonly dbPath?: string;
-  /** 覆盖 Agent（测试注入）；默认 resolveAgents()。 */
   readonly actor?: ActorAgent;
   readonly recorder?: RecorderAgent;
   readonly agentMode?: "stub" | "model";
-  /** CORS origin；默认 true（开发）。 */
   readonly corsOrigin?: boolean | string | string[];
+  /** 推演速率限制；测试可调低。0 表示关闭。 */
+  readonly deduceRateLimit?: number;
+  /** 关闭结构化日志（测试安静）。 */
+  readonly silentLog?: boolean;
 }
 
 export interface AppContext {
   readonly persistence: SqlitePersistence;
   readonly orchestrator: DeductionOrchestrator;
   readonly agentMode: "stub" | "model";
+  readonly metrics: ApiMetrics;
+  readonly rateLimiter: SlidingWindowRateLimiter;
 }
 
 const SCENARIOS = [
@@ -47,6 +57,14 @@ const SCENARIOS = [
     kind: "custom" as const,
   },
 ] as const;
+
+const clientKey = (req: FastifyRequest): string => {
+  const xf = req.headers["x-forwarded-for"];
+  if (typeof xf === "string" && xf.length > 0) {
+    return xf.split(",")[0]!.trim();
+  }
+  return req.ip || "unknown";
+};
 
 export async function buildApp(options: BuildAppOptions = {}): Promise<
   FastifyInstance & {
@@ -83,15 +101,41 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
     },
   });
 
-  const app = Fastify({ logger: false });
+  const metrics = new ApiMetrics();
+  const rateLimit = options.deduceRateLimit ?? DEFAULT_DEDUCE_RATE_LIMIT;
+  const rateLimiter = new SlidingWindowRateLimiter(rateLimit === 0 ? 1_000_000 : rateLimit);
+
+  const app = Fastify({
+    logger: false,
+    bodyLimit: 48 * 1024,
+    requestIdHeader: "x-request-id",
+    genReqId: () => `req-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+  });
+
   await app.register(cors, {
     origin: options.corsOrigin ?? true,
+  });
+
+  const log = (level: "info" | "warn" | "error", msg: string, extra?: Record<string, unknown>) => {
+    if (options.silentLog) return;
+    logStructured({ level, msg, ...extra });
+  };
+
+  // 安全响应头（CSP 最小：API 主要返回 JSON）
+  app.addHook("onSend", async (_req, reply, payload) => {
+    void reply.header("X-Content-Type-Options", "nosniff");
+    void reply.header("X-Frame-Options", "DENY");
+    void reply.header("Referrer-Policy", "no-referrer");
+    void reply.header("Cache-Control", "no-store");
+    return payload;
   });
 
   const context: AppContext = {
     persistence,
     orchestrator,
     agentMode: resolved.mode,
+    metrics,
+    rateLimiter,
   };
   Object.assign(app, { context });
 
@@ -128,18 +172,20 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
     agentMode: context.agentMode,
   }));
 
+  app.get("/api/v1/metrics", async () => ({
+    metrics: metrics.snapshot(),
+  }));
+
   app.get("/api/v1/scenarios", async () => ({
     scenarios: SCENARIOS,
   }));
 
-  /** 重置为场景初始世界状态并清空事件（1.0 单会话重新开始）。 */
   app.post<{ Body: { scenarioId?: string } }>("/api/v1/session/reset", async (req) => {
     const scenarioId = req.body?.scenarioId ?? "chibi";
-    // 1.0 仅赤壁有完整初始状态；custom 仍用赤壁模板
     void scenarioId;
     persistence.store.replace(chibiInitialState);
-    // 清空事件：关闭后不支持；用新 persistence 不现实。直接删表行。
     persistence.db.exec("DELETE FROM events");
+    log("info", "session_reset", { requestId: req.id, scenarioId });
     return {
       ok: true,
       scenarioId: scenarioId === "custom" ? "custom" : "chibi",
@@ -157,34 +203,69 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
     length: persistence.eventLog.length,
   }));
 
-  const runDeduce = async (body: {
-    commandId?: string;
-    rewriteText?: string;
-    submittedAt?: string;
-  }): Promise<
+  const enforceRateLimit = (
+    req: FastifyRequest,
+  ): { ok: true } | { ok: false; status: 429; payload: Record<string, unknown> } => {
+    if (rateLimit === 0) return { ok: true };
+    const rl = rateLimiter.check(clientKey(req));
+    if (!rl.allowed) {
+      metrics.deduceRateLimited += 1;
+      return {
+        ok: false,
+        status: 429,
+        payload: {
+          error: "rate limit exceeded for deduce",
+          code: "rate_limited",
+          retryable: true,
+          retryAfterSec: rl.retryAfterSec,
+        },
+      };
+    }
+    return { ok: true };
+  };
+
+  const runDeduce = async (
+    body: { commandId?: string; rewriteText?: string; submittedAt?: string },
+    meta: { requestId: string },
+  ): Promise<
     | { ok: true; result: DeduceResult }
     | { ok: false; status: number; payload: Record<string, unknown> }
   > => {
-    const commandId = body.commandId;
-    const rewriteText = body.rewriteText;
-    if (typeof commandId !== "string" || commandId.length === 0) {
-      return { ok: false, status: 400, payload: { error: "commandId is required" } };
-    }
-    if (typeof rewriteText !== "string" || rewriteText.length === 0) {
-      return { ok: false, status: 400, payload: { error: "rewriteText is required" } };
+    metrics.deduceTotal += 1;
+
+    const validated = validateDeduceBody(body ?? {});
+    if (!validated.ok) {
+      metrics.deduceValidationError += 1;
+      return { ok: false, status: validated.status, payload: validated.payload };
     }
 
     try {
       const result = await orchestrator.deduce({
-        commandId: asCommandId(commandId),
+        commandId: asCommandId(validated.commandId),
         rewrite: {
-          text: rewriteText,
+          text: validated.rewriteText,
           submittedAt: body.submittedAt ?? new Date().toISOString(),
         },
       });
+      if (result.outcome === "applied") metrics.deduceApplied += 1;
+      else metrics.deduceDuplicate += 1;
+      log("info", "deduce_ok", {
+        requestId: meta.requestId,
+        outcome: result.outcome,
+        commandId: validated.commandId,
+        // 不记录 rewrite 全文，避免日志膨胀与注入内容外泄
+        rewriteLen: validated.rewriteText.length,
+      });
       return { ok: true, result };
     } catch (err: unknown) {
+      metrics.deduceFailed += 1;
       if (isAgentError(err)) {
+        log("warn", "deduce_agent_error", {
+          requestId: meta.requestId,
+          code: err.code,
+          retryable: err.retryable,
+          msg: err.message,
+        });
         return {
           ok: false,
           status: err.retryable ? 503 : 422,
@@ -195,6 +276,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
           },
         };
       }
+      log("error", "deduce_unexpected", {
+        requestId: meta.requestId,
+        msg: err instanceof Error ? err.message : "unknown",
+      });
       throw err;
     }
   };
@@ -202,7 +287,13 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
   app.post<{
     Body: { commandId?: string; rewriteText?: string; submittedAt?: string };
   }>("/api/v1/deduce", async (req, reply) => {
-    const out = await runDeduce(req.body ?? {});
+    const rl = enforceRateLimit(req);
+    if (!rl.ok) {
+      void reply.header("Retry-After", String(rl.payload.retryAfterSec ?? 60));
+      return reply.code(rl.status).send(rl.payload);
+    }
+
+    const out = await runDeduce(req.body ?? {}, { requestId: req.id });
     if (!out.ok) {
       return reply.code(out.status).send(out.payload);
     }
@@ -213,13 +304,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
     };
   });
 
-  /**
-   * DEV-023 最小 SSE：推演阶段进度 + 最终结果。
-   * Content-Type: text/event-stream
-   */
   app.post<{
     Body: { commandId?: string; rewriteText?: string; submittedAt?: string };
   }>("/api/v1/deduce/stream", async (req, reply) => {
+    const rl = enforceRateLimit(req);
     reply.hijack();
     const res = reply.raw;
     res.writeHead(200, {
@@ -227,17 +315,24 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
       "Access-Control-Allow-Origin": "*",
+      "X-Content-Type-Options": "nosniff",
     });
 
     const send = (event: string, data: unknown) => {
       res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     };
 
+    if (!rl.ok) {
+      send("error", rl.payload);
+      res.end();
+      return;
+    }
+
     send("progress", { phase: "accepted", message: "已接收改写" });
     send("progress", { phase: "deducing", message: "演员/记录员推演中…" });
 
     try {
-      const out = await runDeduce(req.body ?? {});
+      const out = await runDeduce(req.body ?? {}, { requestId: req.id });
       if (!out.ok) {
         send("error", out.payload);
         res.end();

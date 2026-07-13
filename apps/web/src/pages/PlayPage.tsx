@@ -60,6 +60,10 @@ export function PlayPage() {
     e.preventDefault();
     const text = input.trim();
     if (!text || busy) return;
+    if (text.length > 4000) {
+      setError("改写过长（最多 4000 字）");
+      return;
+    }
 
     const commandId = pendingCommandId.current ?? newCommandId();
     pendingCommandId.current = commandId;
