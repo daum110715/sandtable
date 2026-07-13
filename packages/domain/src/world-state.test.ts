@@ -12,6 +12,7 @@ describe("WorldState schema", () => {
     const state: WorldState = {
       worldlineId: asWorldlineId("w1"),
       simulationTime: asSimulationTime("t0"),
+      setting: { title: "测试世界", description: "测试设定" },
       persons: { [asPersonId("p1")]: { id: asPersonId("p1"), name: "周瑜" } },
       factions: { [asFactionId("f1")]: { id: asFactionId("f1"), name: "吴" } },
       resources: {},

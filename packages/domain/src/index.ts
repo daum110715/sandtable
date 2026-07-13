@@ -49,6 +49,7 @@ export type {
   Resource,
   Location,
   Relation,
+  WorldSetting,
   WorldState,
   ResourceOwner,
   RelationEndpoint,
@@ -109,13 +110,11 @@ export type {
 } from "./orchestrator.js";
 export { DeductionOrchestrator } from "./orchestrator.js";
 
-// DEV-005 场景与内存桩
+// DEV-005 通用自定义起点与内存桩
 export {
-  chibiInitialState,
-  chibiRewrites,
-  chibiWorldlineId,
-  chibiInitialTime,
-} from "./scenarios/chibi.js";
+  createCustomInitialState,
+  sampleRewrites,
+} from "./scenarios/custom.js";
 export { StubActorAgent, stubActorAgentId } from "./stubs/stub-actor.js";
 export {
   StubRecorderAgent,

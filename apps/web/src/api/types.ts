@@ -1,14 +1,7 @@
-export interface Scenario {
-  readonly id: string;
-  readonly title: string;
-  readonly period: string;
-  readonly summary: string;
-  readonly kind: "preset" | "custom";
-}
-
 export interface WorldState {
   readonly worldlineId: string;
   readonly simulationTime: string;
+  readonly setting?: { title: string; description: string };
   readonly persons: Record<
     string,
     {

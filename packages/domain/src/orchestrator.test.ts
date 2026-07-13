@@ -17,9 +17,21 @@ import { replay } from "./state-core.js";
 import { DeductionOrchestrator } from "./orchestrator.js";
 import { InMemoryEventLog } from "./event-log.js";
 import { InMemoryWorldStateStore } from "./world-state-store.js";
-import { chibiInitialState, chibiRewrites } from "./scenarios/chibi.js";
+import {
+  createCustomInitialState,
+  sampleRewrites,
+} from "./scenarios/custom.js";
 import { StubActorAgent } from "./stubs/stub-actor.js";
 import { StubRecorderAgent } from "./stubs/stub-recorder.js";
+
+const chibiInitialState = createCustomInitialState({
+  title: "编排测试世界",
+  description: "仅用于通用推演编排测试。",
+});
+const chibiRewrites = {
+  fine: sampleRewrites.first,
+  medium: sampleRewrites.second,
+};
 
 const setup = (opts?: {
   actor?: ActorAgent;
@@ -57,11 +69,8 @@ describe("DeductionOrchestrator", () => {
     expect(result.outcome).toBe("applied");
     expect(result.event.commandId).toBe("cmd-nw-wind");
     expect(result.event.rewrite).toEqual(chibiRewrites.fine);
-    expect(result.event.stateChanges.length).toBeGreaterThan(0);
-    expect(
-      result.worldState.resources[asResourceId("resource-wind")]?.attributes
-        ?.direction,
-    ).toBe("西北风");
+    expect(result.event.stateChanges).toEqual([]);
+    expect(result.worldState).toEqual(chibiInitialState);
     expect(store.getState()).toBe(result.worldState);
     expect(eventLog.length).toBe(1);
     expect(eventLog.last()?.id).toBe("e1");
