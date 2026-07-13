@@ -28,9 +28,9 @@ type ChatItem =
 type SideTab = "world" | "events";
 
 const SUGGESTIONS = [
-  "那天江上刮西北风",
-  "曹操退守许都",
-  "孙刘同盟破裂",
+  "引入一个会改变资源分配的新发现",
+  "让两个原本对立的团体开始合作",
+  "设定中的关键规则出现意外例外",
 ] as const;
 
 export function PlayPage() {
@@ -150,7 +150,7 @@ export function PlayPage() {
   };
 
   const scenarioLabel =
-    session?.scenarioId === "custom" ? "自定义背景" : "赤壁之战";
+    worldState?.setting?.title ?? session?.settingTitle ?? "未命名世界";
 
   const renderThread = (): ReactNode[] => {
     const nodes: ReactNode[] = [];
@@ -233,7 +233,7 @@ export function PlayPage() {
                 {worldState.simulationTime}
               </span>
             ) : null}
-            <span className="chip">非史实</span>
+            <span className="chip">假设推演</span>
           </div>
           <div className="stage__actions">
             <Link className="btn btn--ghost btn--sm" to="/">
@@ -250,8 +250,8 @@ export function PlayPage() {
           </div>
         </header>
 
-        {session?.customBackground ? (
-          <p className="stage__bg">{session.customBackground}</p>
+        {worldState?.setting?.description ? (
+          <p className="stage__bg">{worldState.setting.description}</p>
         ) : null}
 
         <div className="thread" ref={listRef} aria-live="polite">
@@ -311,7 +311,7 @@ export function PlayPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="在此切开历史…"
+              placeholder="在此推动世界变化…"
               rows={3}
               disabled={busy}
             />

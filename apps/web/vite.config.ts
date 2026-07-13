@@ -10,7 +10,7 @@ export default defineConfig({
       manifest: {
         name: "Sandtable",
         short_name: "Sandtable",
-        description: "AI 驱动的历史沙盒",
+        description: "AI 驱动的通用推演沙盘",
         theme_color: "#f3eee4",
         background_color: "#f3eee4",
         display: "standalone",

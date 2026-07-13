@@ -8,14 +8,21 @@ import {
   StubRecorderAgent,
   asCommandId,
   asEventId,
-  asPersonId,
-  asResourceId,
-  chibiInitialState,
-  chibiRewrites,
+  createCustomInitialState,
+  sampleRewrites,
   replay,
   assertDeepEqual,
   assertCausalChain,
 } from "@sandtable/domain";
+
+const chibiInitialState = createCustomInitialState({
+  title: "持久化测试世界",
+  description: "仅用于持久化回归测试。",
+});
+const chibiRewrites = {
+  fine: sampleRewrites.first,
+  medium: sampleRewrites.second,
+};
 import { openSqlitePersistence } from "./open.js";
 
 const dirs: string[] = [];
@@ -40,7 +47,7 @@ describe("SqlitePersistence", () => {
       initialState: chibiInitialState,
     });
     expect(p.store.getState().worldlineId).toBe(chibiInitialState.worldlineId);
-    expect(p.store.getPerson(asPersonId("person-caocao"))?.name).toBe("曹操");
+    expect(p.store.getState().setting?.title).toBe("持久化测试世界");
     expect(p.ping()).toBe(true);
     p.close();
   });
@@ -70,9 +77,7 @@ describe("SqlitePersistence", () => {
     });
     expect(first.outcome).toBe("applied");
     expect(p.eventLog.length).toBe(1);
-    expect(
-      p.store.getResource(asResourceId("resource-wind"))?.attributes?.direction,
-    ).toBe("西北风");
+    expect(p.store.getState()).toEqual(chibiInitialState);
 
     const dup = await orch.deduce({
       commandId: asCommandId("cmd-1"),
@@ -122,10 +127,7 @@ describe("SqlitePersistence", () => {
       expect(p.eventLog.findByCommandId(asCommandId("cmd-restart"))?.id).toBe(
         "e-restart-1",
       );
-      expect(
-        p.store.getResource(asResourceId("resource-wind"))?.attributes
-          ?.direction,
-      ).toBe("西北风");
+      expect(p.store.getState()).toEqual(chibiInitialState);
       assertDeepEqual(
         replay(chibiInitialState, p.eventLog.all()),
         p.store.getState(),

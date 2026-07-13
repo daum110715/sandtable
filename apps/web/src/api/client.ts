@@ -2,7 +2,6 @@ import type {
   ApiErrorBody,
   DeduceSuccess,
   DeductionEvent,
-  Scenario,
   WorldState,
 } from "./types.js";
 
@@ -30,12 +29,6 @@ const json = async <T>(res: Response): Promise<T> => {
   return body;
 };
 
-export const fetchScenarios = async (): Promise<readonly Scenario[]> => {
-  const res = await fetch(`${base()}/api/v1/scenarios`);
-  const data = await json<{ scenarios: Scenario[] }>(res);
-  return data.scenarios;
-};
-
 export const fetchWorldState = async (): Promise<WorldState> => {
   const res = await fetch(`${base()}/api/v1/world-state`);
   const data = await json<{ worldState: WorldState }>(res);
@@ -48,11 +41,14 @@ export const fetchEvents = async (): Promise<readonly DeductionEvent[]> => {
   return data.events;
 };
 
-export const resetSession = async (scenarioId: string): Promise<WorldState> => {
+export const resetSession = async (setting: {
+  title?: string;
+  description: string;
+}): Promise<WorldState> => {
   const res = await fetch(`${base()}/api/v1/session/reset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ scenarioId }),
+    body: JSON.stringify({ setting }),
   });
   const data = await json<{ worldState: WorldState }>(res);
   return data.worldState;

@@ -42,18 +42,17 @@ describe("API endpoints", () => {
     expect(response.json()).toMatchObject({ status: "ready", storage: "ok" });
   });
 
-  it("lists scenarios", async () => {
+  it("does not expose preset scenarios", async () => {
     const app = await buildApp(appOpts);
     apps.push(app);
     const res = await app.inject({ method: "GET", url: "/api/v1/scenarios" });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().scenarios.length).toBeGreaterThanOrEqual(1);
+    expect(res.statusCode).toBe(404);
   });
 
   it("idempotent deduce: same commandId does not duplicate events", async () => {
     const app = await buildApp(appOpts);
     apps.push(app);
-    const payload = { commandId: "idem-1", rewriteText: "那天江上刮西北风" };
+    const payload = { commandId: "idem-1", rewriteText: "建立共享补给站" };
     const a = await app.inject({
       method: "POST",
       url: "/api/v1/deduce",
@@ -84,7 +83,7 @@ describe("API endpoints", () => {
       await app.inject({
         method: "POST",
         url: "/api/v1/deduce",
-        payload: { commandId: "api-cmd-1", rewriteText: "那天江上刮西北风" },
+        payload: { commandId: "api-cmd-1", rewriteText: "建立共享补给站" },
       });
       await app.close();
       apps.pop();
@@ -99,10 +98,7 @@ describe("API endpoints", () => {
         method: "GET",
         url: "/api/v1/world-state",
       });
-      expect(
-        state.json().worldState.resources["resource-wind"]?.attributes
-          ?.direction,
-      ).toBe("西北风");
+      expect(state.json().worldState.setting.title).toBe("未命名世界");
     }
   });
 
@@ -154,7 +150,7 @@ describe("API endpoints", () => {
     apps.push(app);
     const payload = (id: string) => ({
       commandId: id,
-      rewriteText: "曹操退守许都",
+      rewriteText: "调整资源分配规则",
     });
     expect(
       (
@@ -190,14 +186,15 @@ describe("API endpoints", () => {
     await app.inject({
       method: "POST",
       url: "/api/v1/deduce",
-      payload: { commandId: "r1", rewriteText: "那天江上刮西北风" },
+      payload: { commandId: "r1", rewriteText: "建立共享补给站" },
     });
     const reset = await app.inject({
       method: "POST",
       url: "/api/v1/session/reset",
-      payload: { scenarioId: "chibi" },
+      payload: { setting: { title: "重置后的世界", description: "新的起点" } },
     });
     expect(reset.statusCode).toBe(200);
+    expect(reset.json().worldState.setting.title).toBe("重置后的世界");
     const events = await app.inject({ method: "GET", url: "/api/v1/events" });
     expect(events.json().length).toBe(0);
   });
@@ -208,7 +205,7 @@ describe("API endpoints", () => {
     const res = await app.inject({
       method: "POST",
       url: "/api/v1/deduce/stream",
-      payload: { commandId: "sse-1", rewriteText: "那天江上刮西北风" },
+      payload: { commandId: "sse-1", rewriteText: "建立共享补给站" },
     });
     expect(res.statusCode).toBe(200);
     expect(res.headers["content-type"]).toContain("text/event-stream");

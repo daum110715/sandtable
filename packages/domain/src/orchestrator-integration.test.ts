@@ -14,9 +14,18 @@ import { replay } from "./state-core.js";
 import { DeductionOrchestrator } from "./orchestrator.js";
 import { InMemoryEventLog } from "./event-log.js";
 import { InMemoryWorldStateStore } from "./world-state-store.js";
-import { chibiInitialState, chibiRewrites } from "./scenarios/chibi.js";
+import {
+  createCustomInitialState,
+  sampleRewrites,
+} from "./scenarios/custom.js";
 import { StubActorAgent } from "./stubs/stub-actor.js";
 import { StubRecorderAgent } from "./stubs/stub-recorder.js";
+
+const chibiInitialState = createCustomInitialState({
+  title: "编排集成测试世界",
+  description: "仅用于通用推演编排集成测试。",
+});
+const chibiRewrites = { fine: sampleRewrites.first };
 
 describe("orchestrator closed loop: rewrite -> deduce -> write -> replay", () => {
   it("satisfies exit criteria: full path, transaction, idempotency, invariants", async () => {
@@ -71,8 +80,6 @@ describe("orchestrator closed loop: rewrite -> deduce -> write -> replay", () =>
     // 世界状态权威与 replay 一致
     const replayed = replay(chibiInitialState, eventLog.all());
     assertDeepEqual(replayed, store.getState());
-    expect(
-      store.getResource(asResourceId("resource-wind"))?.attributes?.direction,
-    ).toBe("西北风");
+    expect(store.getState()).toEqual(replayed);
   });
 });

@@ -1,13 +1,17 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  clearClientSession,
   loadClientSession,
   saveClientSession,
-  clearClientSession,
 } from "./session.js";
 
 const STORAGE_KEY = "sandtable.session.v1";
-
 const mockStore = new Map<string, string>();
+const session = {
+  settingTitle: "测试世界",
+  settingDescription: "由测试定义的世界",
+  enteredAt: "2026-07-13T00:00:00.000Z",
+};
 
 beforeEach(() => {
   mockStore.clear();
@@ -18,54 +22,20 @@ beforeEach(() => {
   });
 });
 
-describe("loadClientSession", () => {
-  it("returns null when localStorage is empty", () => {
+describe("client session", () => {
+  it("returns null when storage is empty or invalid", () => {
     expect(loadClientSession()).toBeNull();
-  });
-
-  it("returns parsed session when present", () => {
-    const session = {
-      scenarioId: "chibi",
-      enteredAt: "2026-07-13T00:00:00.000Z",
-    };
-    mockStore.set(STORAGE_KEY, JSON.stringify(session));
-    expect(loadClientSession()).toEqual(session);
-  });
-
-  it("returns null on invalid JSON", () => {
     mockStore.set(STORAGE_KEY, "not-json{{{");
     expect(loadClientSession()).toBeNull();
   });
-});
 
-describe("saveClientSession", () => {
-  it("writes JSON to localStorage", () => {
-    const session = {
-      scenarioId: "chibi",
-      enteredAt: "2026-07-13T00:00:00.000Z",
-    };
+  it("persists the custom world setting", () => {
     saveClientSession(session);
     expect(mockStore.get(STORAGE_KEY)).toBe(JSON.stringify(session));
+    expect(loadClientSession()).toEqual(session);
   });
 
-  it("includes optional customBackground", () => {
-    const session = {
-      scenarioId: "custom",
-      customBackground: "三国时期",
-      enteredAt: "2026-07-13T00:00:00.000Z",
-    };
-    saveClientSession(session);
-    const loaded = loadClientSession();
-    expect(loaded?.customBackground).toBe("三国时期");
-  });
-});
-
-describe("clearClientSession", () => {
-  it("removes session from localStorage", () => {
-    const session = {
-      scenarioId: "chibi",
-      enteredAt: "2026-07-13T00:00:00.000Z",
-    };
+  it("clears the saved session", () => {
     saveClientSession(session);
     clearClientSession();
     expect(loadClientSession()).toBeNull();
