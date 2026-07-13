@@ -212,4 +212,106 @@ describe("API endpoints", () => {
     expect(res.body).toContain("event: progress");
     expect(res.body).toContain("event: result");
   });
+
+  it("returns API info at /api/v1", async () => {
+    const app = await buildApp(appOpts);
+    apps.push(app);
+    const res = await app.inject({ method: "GET", url: "/api/v1" });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ name: "sandtable", storage: "sqlite" });
+  });
+
+  it("returns world state at /api/v1/world-state", async () => {
+    const app = await buildApp(appOpts);
+    apps.push(app);
+    const res = await app.inject({ method: "GET", url: "/api/v1/world-state" });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().worldState).toBeDefined();
+    expect(res.json().worldState.worldlineId).toBeDefined();
+  });
+
+  it("returns events at /api/v1/events", async () => {
+    const app = await buildApp(appOpts);
+    apps.push(app);
+    const res = await app.inject({ method: "GET", url: "/api/v1/events" });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().events).toBeDefined();
+    expect(res.json().length).toBe(0);
+  });
+
+  it("sets all security headers", async () => {
+    const app = await buildApp(appOpts);
+    apps.push(app);
+    const res = await app.inject({ method: "GET", url: "/health" });
+    expect(res.headers["x-content-type-options"]).toBe("nosniff");
+    expect(res.headers["x-frame-options"]).toBe("DENY");
+    expect(res.headers["referrer-policy"]).toBe("no-referrer");
+    expect(res.headers["cache-control"]).toBe("no-store");
+  });
+
+  it("returns 422 for non-retryable agent error", async () => {
+    const { AgentError } = await import("@sandtable/agents");
+    const actor = {
+      id: "x" as never,
+      deduce: async () => {
+        throw new AgentError("rejected", "content policy", {
+          retryable: false,
+        });
+      },
+    };
+    const recorder = {
+      id: "y" as never,
+      record: async () => ({ stateChanges: [], narrative: { text: "" } }),
+    };
+    const app = await buildApp({
+      ...appOpts,
+      actor,
+      recorder,
+      agentMode: "model",
+    });
+    apps.push(app);
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload: { commandId: "reject-1", rewriteText: "test" },
+    });
+    expect(res.statusCode).toBe(422);
+    expect(res.json()).toMatchObject({ code: "rejected", retryable: false });
+  });
+
+  it("uses X-Forwarded-For header for rate limiting", async () => {
+    const app = await buildApp({ ...appOpts, deduceRateLimit: 1 });
+    apps.push(app);
+    const payload = { commandId: "xff-1", rewriteText: "test" };
+
+    const first = await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload,
+      headers: { "x-forwarded-for": "1.2.3.4" },
+    });
+    expect(first.statusCode).toBe(200);
+
+    const second = await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload: { commandId: "xff-2", rewriteText: "test" },
+      headers: { "x-forwarded-for": "1.2.3.4" },
+    });
+    expect(second.statusCode).toBe(429);
+  });
+
+  it("reports metrics after deductions", async () => {
+    const app = await buildApp(appOpts);
+    apps.push(app);
+    await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload: { commandId: "m1", rewriteText: "test" },
+    });
+    const m = await app.inject({ method: "GET", url: "/api/v1/metrics" });
+    expect(m.json().metrics.deduceTotal).toBe(1);
+    expect(m.json().metrics.deduceApplied).toBe(1);
+  });
 });
