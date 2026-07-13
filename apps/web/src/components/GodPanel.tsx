@@ -51,7 +51,7 @@ export function GodPanel({ worldState }: { worldState: WorldState | null }) {
         <h2>世界状态</h2>
         <dl className="god__clock">
           <dt>世界设定</dt>
-          <dd>{worldState.setting?.title ?? "未命名世界"}</dd>
+          <dd>{worldState.setting.title}</dd>
         </dl>
         <dl className="god__clock">
           <dt>模拟时刻</dt>

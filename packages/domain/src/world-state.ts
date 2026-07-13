@@ -74,8 +74,8 @@ export interface WorldSetting {
 export interface WorldState {
   readonly worldlineId: WorldlineId;
   readonly simulationTime: SimulationTime;
-  /** 旧持久化快照可能尚未包含该字段；新世界必须在创建时写入。 */
-  readonly setting?: WorldSetting;
+  /** 用户定义的推演起点；新建世界必须写入。 */
+  readonly setting: WorldSetting;
   readonly persons: Readonly<Record<PersonId, Person>>;
   readonly factions: Readonly<Record<FactionId, Faction>>;
   readonly resources: Readonly<Record<ResourceId, Resource>>;

@@ -18,6 +18,10 @@ import {
 const worldState = {
   worldlineId: asWorldlineId("w1"),
   simulationTime: asSimulationTime("t0"),
+  setting: {
+    title: "提示词测试世界",
+    description: "用于验证世界设定进入提示词。",
+  },
   persons: { [asPersonId("p1")]: { id: asPersonId("p1"), name: "周瑜" } },
   factions: {},
   resources: {},
@@ -53,6 +57,7 @@ describe("buildActorUserPrompt", () => {
     const prompt = buildActorUserPrompt(input);
     expect(prompt).toContain("模拟时刻: t0");
     expect(prompt).toContain("世界线: w1");
+    expect(prompt).toContain("世界设定: 提示词测试世界");
     expect(prompt).toContain("改写: 那天江上刮西北风");
   });
 
@@ -86,5 +91,6 @@ describe("buildRecorderUserPrompt", () => {
     expect(prompt).toContain("模拟时刻: t1");
     expect(prompt).toContain("演员叙事: 西北风起，火船反烧");
     expect(prompt).toContain("风向转为西北");
+    expect(prompt).toContain("设定说明: 用于验证世界设定进入提示词。");
   });
 });

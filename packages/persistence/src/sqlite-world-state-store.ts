@@ -17,6 +17,24 @@ import {
   type Resource,
 } from "@sandtable/domain";
 
+type StoredWorldState = Omit<WorldState, "setting"> & {
+  readonly setting?: WorldState["setting"];
+};
+
+const normalizeStoredState = (state: StoredWorldState): WorldState => {
+  const normalized =
+    state.setting !== undefined
+      ? (state as WorldState)
+      : {
+          ...state,
+          setting: {
+            title: "未命名世界",
+            description: "此世界由旧版本创建，未保存世界设定。",
+          },
+        };
+  return normalized;
+};
+
 /**
  * SQLite 世界状态数据库。读写均以 DB 为准，避免事务回滚后内存缓存脏读。
  */
@@ -60,7 +78,9 @@ export class SqliteWorldStateStore implements WorldStateStore {
       const row = this.#getByWorldlineStmt.get(this.#worldlineId) as
         { payload: string } | undefined;
       if (row !== undefined) {
-        return JSON.parse(row.payload) as WorldState;
+        return normalizeStoredState(
+          JSON.parse(row.payload) as StoredWorldState,
+        );
       }
     }
     const any = this.#getAnyStmt.get() as
@@ -72,7 +92,7 @@ export class SqliteWorldStateStore implements WorldStateStore {
       );
     }
     this.#worldlineId = any.worldline_id;
-    return JSON.parse(any.payload) as WorldState;
+    return normalizeStoredState(JSON.parse(any.payload) as StoredWorldState);
   }
 
   getState(): WorldState {
@@ -100,7 +120,8 @@ export class SqliteWorldStateStore implements WorldStateStore {
   }
 
   apply(changes: readonly StateChange[]): WorldState {
-    const next = applyStateChanges(this.getState(), changes);
+    const current = this.getState();
+    const next = applyStateChanges(current, changes);
     this.replace(next);
     return next;
   }

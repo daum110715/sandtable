@@ -1,80 +1,26 @@
-// DEV-018 最小状态一致性：写回前检查 StateChange 相对当前世界状态可应用。
+// DEV-018：将模型输出校验收敛到领域层，确保所有 Recorder 走同一套状态完整性规则。
 
-import type { StateChange, WorldState } from "@sandtable/domain";
+import {
+  assertStateChangesCanApply,
+  isDomainError,
+  type StateChange,
+  type WorldState,
+} from "@sandtable/domain";
 import { AgentError } from "./errors.js";
 
-const entityCollection = (
-  state: WorldState,
-  entity: StateChange["entity"],
-): Readonly<Record<string, unknown>> => {
-  switch (entity) {
-    case "person":
-      return state.persons;
-    case "faction":
-      return state.factions;
-    case "resource":
-      return state.resources;
-    case "location":
-      return state.locations;
-    case "relation":
-      return state.relations;
-  }
-};
-
 /**
- * 校验变更可应用；不修改状态。
- * - create：id 不得已存在
- * - update/delete：id 必须存在
- * - create.value 必须含 id
+ * 将领域层的不可应用变更转换为模型输出错误，使 API 能以 422 返回。
  */
 export const assertStateChangesConsistent = (
   state: WorldState,
   changes: readonly StateChange[],
 ): void => {
-  // 顺序模拟：同一批内 create 后可 update
-  const shadows: Record<string, Set<string>> = {
-    person: new Set(Object.keys(state.persons)),
-    faction: new Set(Object.keys(state.factions)),
-    resource: new Set(Object.keys(state.resources)),
-    location: new Set(Object.keys(state.locations)),
-    relation: new Set(Object.keys(state.relations)),
-  };
-
-  for (const c of changes) {
-    const set = shadows[c.entity]!;
-    if (c.op === "create") {
-      const value = c.value as { id?: string };
-      if (typeof value?.id !== "string" || value.id.length === 0) {
-        throw new AgentError(
-          "invalid_output",
-          `create ${c.entity} missing value.id`,
-        );
-      }
-      if (set.has(value.id)) {
-        throw new AgentError(
-          "invalid_output",
-          `create ${c.entity} id already exists: ${value.id}`,
-        );
-      }
-      set.add(value.id);
-    } else if (c.op === "update" || c.op === "delete") {
-      const id = String(c.id);
-      if (!set.has(id)) {
-        throw new AgentError(
-          "invalid_output",
-          `${c.op} ${c.entity} id not found: ${id}`,
-        );
-      }
-      // 确认权威状态中也存在（shadow 可能来自本批 create）
-      const coll = entityCollection(state, c.entity);
-      if (!(id in coll) && !set.has(id)) {
-        throw new AgentError("invalid_output", `${c.op} target missing: ${id}`);
-      }
-      if (c.op === "delete") {
-        set.delete(id);
-      }
-    } else {
-      throw new AgentError("invalid_output", `unknown state change op`);
+  try {
+    assertStateChangesCanApply(state, changes);
+  } catch (error) {
+    if (isDomainError(error)) {
+      throw new AgentError("invalid_output", error.message, { cause: error });
     }
+    throw error;
   }
 };

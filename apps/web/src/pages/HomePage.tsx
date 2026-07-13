@@ -25,8 +25,8 @@ export function HomePage() {
         description: trimmed,
       });
       saveClientSession({
-        settingTitle: worldState.setting?.title ?? "未命名世界",
-        settingDescription: worldState.setting?.description ?? trimmed,
+        settingTitle: worldState.setting.title,
+        settingDescription: worldState.setting.description,
         enteredAt: new Date().toISOString(),
       });
       navigate("/play");

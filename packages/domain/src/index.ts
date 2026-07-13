@@ -84,6 +84,7 @@ export {
   assertActorOutputIsStateless,
   assertAppendOnly,
   assertStateChangesAreValid,
+  assertStateChangesCanApply,
   assertCausalChain,
   assertDeepEqual,
 } from "./invariants.js";

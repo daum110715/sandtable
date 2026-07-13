@@ -14,6 +14,7 @@ import { assertStateChangesConsistent } from "./validate.js";
 const empty = (): WorldState => ({
   worldlineId: asWorldlineId("w"),
   simulationTime: asSimulationTime("t0"),
+  setting: { title: "校验测试世界", description: "用于状态变更校验。" },
   persons: {
     [asPersonId("p1")]: { id: asPersonId("p1"), name: "周瑜" },
   },

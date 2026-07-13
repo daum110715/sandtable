@@ -150,7 +150,7 @@ export function PlayPage() {
   };
 
   const scenarioLabel =
-    worldState?.setting?.title ?? session?.settingTitle ?? "未命名世界";
+    worldState?.setting.title ?? session?.settingTitle ?? "未命名世界";
 
   const renderThread = (): ReactNode[] => {
     const nodes: ReactNode[] = [];
@@ -250,7 +250,7 @@ export function PlayPage() {
           </div>
         </header>
 
-        {worldState?.setting?.description ? (
+        {worldState?.setting.description ? (
           <p className="stage__bg">{worldState.setting.description}</p>
         ) : null}
 

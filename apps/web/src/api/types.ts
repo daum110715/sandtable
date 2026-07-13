@@ -1,7 +1,7 @@
 export interface WorldState {
   readonly worldlineId: string;
   readonly simulationTime: string;
-  readonly setting?: { title: string; description: string };
+  readonly setting: { title: string; description: string };
   readonly persons: Record<
     string,
     {

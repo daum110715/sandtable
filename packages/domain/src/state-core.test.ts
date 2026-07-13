@@ -225,6 +225,21 @@ describe("state-core", () => {
         }),
       ).toThrow(DomainError);
     });
+
+    it("delete on missing entity throws DomainError", () => {
+      expect(() =>
+        applyStateChange(empty(), {
+          op: "delete",
+          entity: "person",
+          id: asPersonId("ghost"),
+        }),
+      ).toThrow(DomainError);
+    });
+
+    it("create on an existing entity throws DomainError", () => {
+      const state = applyStateChange(empty(), createZhouYu);
+      expect(() => applyStateChange(state, createZhouYu)).toThrow(DomainError);
+    });
   });
 
   describe("applyStateChanges", () => {

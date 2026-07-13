@@ -17,8 +17,8 @@ JSON 形状：
 export const buildActorUserPrompt = (input: ActorInput): string => {
   const ws = input.worldState;
   return [
-    `世界设定: ${ws.setting?.title ?? "未命名世界"}`,
-    `设定说明: ${ws.setting?.description ?? "未提供设定说明"}`,
+    `世界设定: ${ws.setting.title}`,
+    `设定说明: ${ws.setting.description}`,
     `模拟时刻: ${ws.simulationTime}`,
     `世界线: ${ws.worldlineId}`,
     `改写: ${input.rewrite.text}`,
@@ -59,8 +59,8 @@ JSON 形状：
 
 export const buildRecorderUserPrompt = (input: RecorderInput): string => {
   return [
-    `世界设定: ${input.worldState.setting?.title ?? "未命名世界"}`,
-    `设定说明: ${input.worldState.setting?.description ?? "未提供设定说明"}`,
+    `世界设定: ${input.worldState.setting.title}`,
+    `设定说明: ${input.worldState.setting.description}`,
     `模拟时刻: ${input.simulationTime}`,
     `改写: ${input.rewrite.text}`,
     `演员叙事: ${input.actorOutput.narrative.text}`,

@@ -226,7 +226,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
     persistence.db.exec("DELETE FROM events");
     log("info", "session_reset", {
       requestId: req.id,
-      settingTitle: worldState.setting?.title ?? "未命名世界",
+      settingTitle: worldState.setting.title,
     });
     return {
       ok: true,

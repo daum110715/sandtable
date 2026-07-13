@@ -49,6 +49,40 @@ describe("API endpoints", () => {
     expect(res.statusCode).toBe(404);
   });
 
+  it("creates and advances a custom world through the default local path", async () => {
+    const app = await buildApp(appOpts);
+    apps.push(app);
+    const reset = await app.inject({
+      method: "POST",
+      url: "/api/v1/session/reset",
+      payload: {
+        setting: {
+          title: "浮岛联盟",
+          description: "漂浮岛屿依靠有限水源维系贸易。",
+        },
+      },
+    });
+    expect(reset.statusCode).toBe(200);
+    expect(reset.json().worldState.setting).toEqual({
+      title: "浮岛联盟",
+      description: "漂浮岛屿依靠有限水源维系贸易。",
+    });
+
+    const deduce = await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload: { commandId: "custom-world-1", rewriteText: "建立共享水源机制" },
+    });
+    expect(deduce.statusCode).toBe(200);
+    expect(deduce.json().worldState.simulationTime).toBe("阶段 1");
+    expect(
+      deduce.json().worldState.resources["resource-effect-1"],
+    ).toMatchObject({
+      type: "world-effect",
+      attributes: { description: "建立共享水源机制" },
+    });
+  });
+
   it("idempotent deduce: same commandId does not duplicate events", async () => {
     const app = await buildApp(appOpts);
     apps.push(app);

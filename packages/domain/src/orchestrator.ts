@@ -13,7 +13,7 @@ import type { CommandId, EventId, SessionId, SimulationTime } from "./ids.js";
 import { asEventId } from "./ids.js";
 import {
   assertActorOutputIsStateless,
-  assertStateChangesAreValid,
+  assertStateChangesCanApply,
 } from "./invariants.js";
 import { applyStateChanges, buildEvent } from "./state-core.js";
 import type { WorldState } from "./world-state.js";
@@ -102,10 +102,13 @@ export class DeductionOrchestrator {
       actorOutput,
       simulationTime,
     });
-    assertStateChangesAreValid(recorderOutput.stateChanges);
+    assertStateChangesCanApply(state0, recorderOutput.stateChanges);
 
+    // 显式命令时刻代表调用方指定的推演落点，优先于记录员的自动推进。
     const nextSimulationTime =
-      recorderOutput.nextSimulationTime ?? simulationTime;
+      command.simulationTime ??
+      recorderOutput.nextSimulationTime ??
+      simulationTime;
     const nextStateBase = applyStateChanges(
       state0,
       recorderOutput.stateChanges,

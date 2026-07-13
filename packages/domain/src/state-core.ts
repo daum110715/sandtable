@@ -32,12 +32,26 @@ import type {
 const setEntity = <K extends string, V extends { id: K }>(
   coll: Readonly<Record<K, V>>,
   value: V,
-): Readonly<Record<K, V>> => ({ ...coll, [value.id]: value });
+): Readonly<Record<K, V>> => {
+  if (coll[value.id] !== undefined) {
+    throw new DomainError(
+      "duplicate",
+      `entity ${String(value.id)} already exists`,
+    );
+  }
+  return { ...coll, [value.id]: value };
+};
 
 const removeEntity = <K extends string, V>(
   coll: Readonly<Record<K, V>>,
   id: K,
 ): Readonly<Record<K, V>> => {
+  if (coll[id] === undefined) {
+    throw new DomainError(
+      "not_found",
+      `entity ${String(id)} not found for delete`,
+    );
+  }
   const next: Record<K, V> = { ...coll };
   delete next[id];
   return next;
@@ -147,7 +161,10 @@ export const replay = (
   log: readonly DeductionEvent[],
 ): WorldState =>
   log.reduce<WorldState>(
-    (state, ev) => applyStateChanges(state, ev.stateChanges),
+    (state, ev) => ({
+      ...applyStateChanges(state, ev.stateChanges),
+      simulationTime: ev.simulationTime,
+    }),
     initialState,
   );
 

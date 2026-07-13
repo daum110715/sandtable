@@ -4,6 +4,8 @@
 import type { ActorOutput } from "./agents.js";
 import type { DeductionEvent, StateChange } from "./events.js";
 import { DomainError } from "./errors.js";
+import { applyStateChanges } from "./state-core.js";
+import type { WorldState } from "./world-state.js";
 
 /**
  * 不变量 1：ActorOutput 不含 StateChange（演员 Agent 无写世界状态路径）。
@@ -47,16 +49,49 @@ export const assertStateChangesAreValid = (
   changes: readonly StateChange[],
 ): void => {
   for (const c of changes) {
+    if (c.op !== "create" && c.op !== "update" && c.op !== "delete") {
+      throw new DomainError(
+        "invariant_violation",
+        "unknown state change operation",
+      );
+    }
+    if (
+      c.entity !== "person" &&
+      c.entity !== "faction" &&
+      c.entity !== "resource" &&
+      c.entity !== "location" &&
+      c.entity !== "relation"
+    ) {
+      throw new DomainError(
+        "invariant_violation",
+        "unknown state change entity",
+      );
+    }
     if (c.op === "create" && c.value === undefined) {
       throw new DomainError(
         "invariant_violation",
         "create change missing value",
       );
     }
+    if (
+      c.op === "create" &&
+      (typeof c.value.id !== "string" || c.value.id.length === 0)
+    ) {
+      throw new DomainError("invariant_violation", "create change missing id");
+    }
     if ((c.op === "update" || c.op === "delete") && c.id === undefined) {
       throw new DomainError("invariant_violation", `${c.op} change missing id`);
     }
   }
+};
+
+/** Validate only the operational constraints needed to apply a batch. */
+export const assertStateChangesCanApply = (
+  state: WorldState,
+  changes: readonly StateChange[],
+): void => {
+  assertStateChangesAreValid(changes);
+  applyStateChanges(state, changes);
 };
 
 /** 不变量 4：因果链可追溯 -- 首事件无前置，其余指向前一事件 id。 */

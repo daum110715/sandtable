@@ -69,8 +69,11 @@ describe("DeductionOrchestrator", () => {
     expect(result.outcome).toBe("applied");
     expect(result.event.commandId).toBe("cmd-nw-wind");
     expect(result.event.rewrite).toEqual(chibiRewrites.fine);
-    expect(result.event.stateChanges).toEqual([]);
-    expect(result.worldState).toEqual(chibiInitialState);
+    expect(result.event.stateChanges).toHaveLength(1);
+    expect(
+      result.worldState.resources[asResourceId("resource-effect-1")]?.type,
+    ).toBe("world-effect");
+    expect(result.worldState.simulationTime).toBe("阶段 1");
     expect(store.getState()).toBe(result.worldState);
     expect(eventLog.length).toBe(1);
     expect(eventLog.last()?.id).toBe("e1");

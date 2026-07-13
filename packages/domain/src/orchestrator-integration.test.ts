@@ -68,7 +68,7 @@ describe("orchestrator closed loop: rewrite -> deduce -> write -> replay", () =>
     const second = await orchestrator.deduce({
       commandId: asCommandId("m2-cmd-2"),
       rewrite: {
-        text: "曹操退守许都",
+        text: "调整资源分配规则",
         submittedAt: "2026-07-13T12:01:00.000Z",
       },
     });

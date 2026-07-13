@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DeductionEvent } from "./events.js";
-import { asEventId } from "./ids.js";
+import { asEventId, asResourceId } from "./ids.js";
 import {
   createCustomInitialState,
   sampleRewrites,
@@ -52,8 +52,14 @@ describe("domain closed loop: rewrite -> deduce -> record -> write -> replay", (
     assertStateChangesAreValid(recorderOutput.stateChanges);
 
     // 写回世界状态
-    state = applyStateChanges(state, recorderOutput.stateChanges);
-    expect(recorderOutput.stateChanges).toEqual([]);
+    state = {
+      ...applyStateChanges(state, recorderOutput.stateChanges),
+      simulationTime: recorderOutput.nextSimulationTime ?? state.simulationTime,
+    };
+    expect(recorderOutput.stateChanges).toHaveLength(1);
+    expect(state.resources[asResourceId("resource-effect-1")]?.type).toBe(
+      "world-effect",
+    );
 
     // 追加事件（不变量 2：仅追加）
     const previousEventId =
@@ -97,7 +103,11 @@ describe("domain closed loop: rewrite -> deduce -> record -> write -> replay", (
         actorOutput,
         simulationTime: state.simulationTime,
       });
-      state = applyStateChanges(state, recorderOutput.stateChanges);
+      state = {
+        ...applyStateChanges(state, recorderOutput.stateChanges),
+        simulationTime:
+          recorderOutput.nextSimulationTime ?? state.simulationTime,
+      };
       const previousEventId =
         log.length > 0 ? log[log.length - 1]?.id : undefined;
       log = appendEvent(
@@ -105,7 +115,8 @@ describe("domain closed loop: rewrite -> deduce -> record -> write -> replay", (
         buildEvent({
           id: asEventId(`e${i + 1}`),
           worldlineId: state.worldlineId,
-          simulationTime: state.simulationTime,
+          simulationTime:
+            recorderOutput.nextSimulationTime ?? state.simulationTime,
           rewrite: chibiRewrites.fine,
           narrative: recorderOutput.narrative,
           stateChanges: recorderOutput.stateChanges,

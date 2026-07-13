@@ -8,6 +8,7 @@ import {
   StubRecorderAgent,
   asCommandId,
   asEventId,
+  asResourceId,
   createCustomInitialState,
   sampleRewrites,
   replay,
@@ -47,7 +48,7 @@ describe("SqlitePersistence", () => {
       initialState: chibiInitialState,
     });
     expect(p.store.getState().worldlineId).toBe(chibiInitialState.worldlineId);
-    expect(p.store.getState().setting?.title).toBe("持久化测试世界");
+    expect(p.store.getState().setting.title).toBe("持久化测试世界");
     expect(p.ping()).toBe(true);
     p.close();
   });
@@ -77,7 +78,7 @@ describe("SqlitePersistence", () => {
     });
     expect(first.outcome).toBe("applied");
     expect(p.eventLog.length).toBe(1);
-    expect(p.store.getState()).toEqual(chibiInitialState);
+    expect(p.store.getState()).toEqual(first.worldState);
 
     const dup = await orch.deduce({
       commandId: asCommandId("cmd-1"),
@@ -127,7 +128,9 @@ describe("SqlitePersistence", () => {
       expect(p.eventLog.findByCommandId(asCommandId("cmd-restart"))?.id).toBe(
         "e-restart-1",
       );
-      expect(p.store.getState()).toEqual(chibiInitialState);
+      expect(
+        p.store.getState().resources[asResourceId("resource-effect-1")]?.type,
+      ).toBe("world-effect");
       assertDeepEqual(
         replay(chibiInitialState, p.eventLog.all()),
         p.store.getState(),
