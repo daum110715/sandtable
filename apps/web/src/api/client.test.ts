@@ -2,7 +2,6 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
   ApiError,
   withRetry,
-  fetchScenarios,
   fetchWorldState,
   fetchEvents,
   resetSession,
@@ -153,25 +152,6 @@ describe("withRetry", () => {
   });
 });
 
-describe("fetchScenarios", () => {
-  it("fetches scenarios from API", async () => {
-    const scenarios = [{ id: "chibi", title: "赤壁之战" }];
-    mockFetch.mockResolvedValueOnce(jsonResponse({ scenarios }));
-    const result = await fetchScenarios();
-    expect(result).toEqual(scenarios);
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/v1/scenarios"),
-    );
-  });
-
-  it("throws ApiError on non-OK response", async () => {
-    mockFetch.mockResolvedValueOnce(
-      errorResponse(500, { error: "server error" }),
-    );
-    await expect(fetchScenarios()).rejects.toBeInstanceOf(ApiError);
-  });
-});
-
 describe("fetchWorldState", () => {
   it("fetches world state from API", async () => {
     const worldState = { worldlineId: "w1", simulationTime: "t0" };
@@ -191,10 +171,13 @@ describe("fetchEvents", () => {
 });
 
 describe("resetSession", () => {
-  it("posts scenarioId and returns world state", async () => {
+  it("posts setting and returns world state", async () => {
     const worldState = { worldlineId: "w1" };
     mockFetch.mockResolvedValueOnce(jsonResponse({ worldState }));
-    const result = await resetSession("chibi");
+    const result = await resetSession({
+      title: "赤壁之战",
+      description: "曹军南下",
+    });
     expect(result).toEqual(worldState);
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/session/reset"),
