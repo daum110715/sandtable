@@ -65,9 +65,17 @@ export interface Relation {
   readonly strength?: number;
 }
 
+/** 用户定义的推演起点；随世界状态持久化，是 Agent 读取的权威上下文。 */
+export interface WorldSetting {
+  readonly title: string;
+  readonly description: string;
+}
+
 export interface WorldState {
   readonly worldlineId: WorldlineId;
   readonly simulationTime: SimulationTime;
+  /** 旧持久化快照可能尚未包含该字段；新世界必须在创建时写入。 */
+  readonly setting?: WorldSetting;
   readonly persons: Readonly<Record<PersonId, Person>>;
   readonly factions: Readonly<Record<FactionId, Faction>>;
   readonly resources: Readonly<Record<ResourceId, Resource>>;

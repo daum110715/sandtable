@@ -3,8 +3,8 @@
 const SESSION_KEY = "sandtable.session.v1";
 
 export interface ClientSession {
-  readonly scenarioId: string;
-  readonly customBackground?: string;
+  readonly settingTitle: string;
+  readonly settingDescription: string;
   readonly enteredAt: string;
 }
 

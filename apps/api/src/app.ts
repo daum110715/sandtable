@@ -4,7 +4,7 @@ import {
   DeductionOrchestrator,
   asCommandId,
   asEventId,
-  chibiInitialState,
+  createCustomInitialState,
   systemIdentity,
   type ActorAgent,
   type DeduceResult,
@@ -44,23 +44,44 @@ export interface AppContext {
   readonly rateLimiter: SlidingWindowRateLimiter;
 }
 
-const SCENARIOS = [
-  {
-    id: "chibi",
-    title: "赤壁之战",
-    period: "建安十三年 · 公元 208 年冬",
-    summary: "曹军南下，孙刘联军于赤壁对峙。自由改写风向、战局与人物去向。",
-    kind: "preset" as const,
-  },
-  {
-    id: "custom",
-    title: "自定义背景",
-    period: "由你指定",
-    summary:
-      "1.0 最小：以赤壁世界状态模板起步，自定义文字记入会话说明（非独立史料库）。",
-    kind: "custom" as const,
-  },
-] as const;
+const DEFAULT_SETTING = {
+  title: "未命名世界",
+  description: "这是一个等待用户定义的通用推演世界。",
+} as const;
+
+const validateSetting = (
+  setting: { title?: unknown; description?: unknown } | undefined,
+):
+  | { ok: true; value: { title?: string; description: string } }
+  | {
+      ok: false;
+      error: string;
+    } => {
+  if (typeof setting?.description !== "string" || !setting.description.trim()) {
+    return { ok: false, error: "setting.description is required" };
+  }
+  if (setting.description.trim().length > 4000) {
+    return {
+      ok: false,
+      error: "setting.description must be at most 4000 characters",
+    };
+  }
+  if (setting.title !== undefined && typeof setting.title !== "string") {
+    return { ok: false, error: "setting.title must be a string" };
+  }
+  if (typeof setting.title === "string" && setting.title.trim().length > 120) {
+    return { ok: false, error: "setting.title must be at most 120 characters" };
+  }
+  return {
+    ok: true,
+    value: {
+      ...(typeof setting.title === "string" && setting.title.trim()
+        ? { title: setting.title.trim() }
+        : {}),
+      description: setting.description.trim(),
+    },
+  };
+};
 
 const clientKey = (req: FastifyRequest): string => {
   const xf = req.headers["x-forwarded-for"];
@@ -78,7 +99,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
   const dbPath = options.dbPath ?? ":memory:";
   const persistence = openSqlitePersistence({
     path: dbPath,
-    initialState: chibiInitialState,
+    initialState: createCustomInitialState(DEFAULT_SETTING),
   });
 
   const resolved =
@@ -189,26 +210,30 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
     metrics: metrics.snapshot(),
   }));
 
-  app.get("/api/v1/scenarios", async () => ({
-    scenarios: SCENARIOS,
-  }));
-
-  app.post<{ Body: { scenarioId?: string } }>(
-    "/api/v1/session/reset",
-    async (req) => {
-      const scenarioId = req.body?.scenarioId ?? "chibi";
-      void scenarioId;
-      persistence.store.replace(chibiInitialState);
-      persistence.db.exec("DELETE FROM events");
-      log("info", "session_reset", { requestId: req.id, scenarioId });
-      return {
-        ok: true,
-        scenarioId: scenarioId === "custom" ? "custom" : "chibi",
-        worldState: persistence.store.getState(),
-        events: [] as const,
-      };
-    },
-  );
+  app.post<{
+    Body: { setting?: { title?: unknown; description?: unknown } };
+  }>("/api/v1/session/reset", async (req, reply) => {
+    const validated = validateSetting(req.body?.setting);
+    if (!validated.ok) {
+      return reply.code(400).send({
+        error: validated.error,
+        code: "validation_error",
+        retryable: false,
+      });
+    }
+    const worldState = createCustomInitialState(validated.value);
+    persistence.store.replace(worldState);
+    persistence.db.exec("DELETE FROM events");
+    log("info", "session_reset", {
+      requestId: req.id,
+      settingTitle: worldState.setting?.title ?? "未命名世界",
+    });
+    return {
+      ok: true,
+      worldState,
+      events: [] as const,
+    };
+  });
 
   app.get(
     "/api/v1/world-state",

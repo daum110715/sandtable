@@ -6,9 +6,26 @@ import {
   asCommandId,
   asEventId,
   asResourceId,
-  chibiInitialState,
-  chibiRewrites,
+  createCustomInitialState,
+  sampleRewrites,
 } from "@sandtable/domain";
+
+const chibiInitialState = createCustomInitialState({
+  title: "Agent 测试世界",
+  description: "仅用于模型协议回归测试。",
+});
+const stateWithResource = {
+  ...chibiInitialState,
+  resources: {
+    [asResourceId("resource-wind")]: {
+      id: asResourceId("resource-wind"),
+      name: "环境条件",
+      type: "condition",
+      quantity: 1,
+    },
+  },
+};
+const chibiRewrites = { fine: sampleRewrites.first };
 import { AgentError } from "./errors.js";
 import type { LlmClient } from "./llm.js";
 import { ModelActorAgent } from "./model-actor.js";
@@ -54,7 +71,7 @@ describe("ModelActorAgent / ModelRecorderAgent", () => {
       }),
     ]);
 
-    const store = new InMemoryWorldStateStore(chibiInitialState);
+    const store = new InMemoryWorldStateStore(stateWithResource);
     const eventLog = new InMemoryEventLog();
     const orch = new DeductionOrchestrator({
       store,

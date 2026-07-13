@@ -32,6 +32,7 @@ import {
 const empty = (): WorldState => ({
   worldlineId: asWorldlineId("w1"),
   simulationTime: asSimulationTime("t0"),
+  setting: { title: "测试世界", description: "测试设定" },
   persons: {},
   factions: {},
   resources: {},

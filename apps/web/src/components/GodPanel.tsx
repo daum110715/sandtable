@@ -50,6 +50,10 @@ export function GodPanel({ worldState }: { worldState: WorldState | null }) {
         <p className="kicker">只读投影 · 权威快照</p>
         <h2>世界状态</h2>
         <dl className="god__clock">
+          <dt>世界设定</dt>
+          <dd>{worldState.setting?.title ?? "未命名世界"}</dd>
+        </dl>
+        <dl className="god__clock">
           <dt>模拟时刻</dt>
           <dd className="mono">{worldState.simulationTime}</dd>
         </dl>

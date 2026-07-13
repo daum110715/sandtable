@@ -9,7 +9,7 @@ import { HomePage } from "./pages/HomePage.js";
 import { PlayPage } from "./pages/PlayPage.js";
 
 export const navigationSections = [
-  { path: "/", label: "分岔口", title: "选择场景" },
+  { path: "/", label: "分岔口", title: "定义世界" },
   { path: "/play", label: "推演台", title: "改写与推演" },
 ] as const;
 
@@ -49,7 +49,7 @@ export function App() {
         </nav>
 
         <div className="mast__trail">
-          <span className="mast__badge" title="非史实推演">
+          <span className="mast__badge" title="假设推演">
             假设演绎
           </span>
           <button
@@ -57,7 +57,7 @@ export function App() {
             className={isPlay ? "btn btn--ghost" : "btn btn--solid"}
             onClick={() => navigate(isPlay ? "/" : "/play")}
           >
-            {isPlay ? "换场景" : "进入推演"}
+            {isPlay ? "换世界" : "进入推演"}
           </button>
         </div>
       </header>
