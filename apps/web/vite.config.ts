@@ -11,8 +11,8 @@ export default defineConfig({
         name: "Sandtable",
         short_name: "Sandtable",
         description: "AI 驱动的历史沙盒",
-        theme_color: "#15110c",
-        background_color: "#f4efe4",
+        theme_color: "#f3eee4",
+        background_color: "#f3eee4",
         display: "standalone",
         start_url: "/"
       }

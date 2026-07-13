@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { Link } from "react-router-dom";
 import {
   ApiError,
@@ -17,6 +25,10 @@ type ChatItem =
   | { kind: "narrative"; text: string; outcome?: string }
   | { kind: "system"; text: string };
 
+type SideTab = "world" | "events";
+
+const SUGGESTIONS = ["那天江上刮西北风", "曹操退守许都", "孙刘同盟破裂"] as const;
+
 export function PlayPage() {
   const session = loadClientSession();
   const [worldState, setWorldState] = useState<WorldState | null>(null);
@@ -26,7 +38,7 @@ export function PlayPage() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** 网络重试用同一 commandId，避免重复事件 */
+  const [sideTab, setSideTab] = useState<SideTab>("world");
   const pendingCommandId = useRef<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -53,11 +65,12 @@ export function PlayPage() {
   }, [hydrate]);
 
   useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   }, [chat, progress]);
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
+  const runSubmit = async () => {
     const text = input.trim();
     if (!text || busy) return;
     if (text.length > 4000) {
@@ -69,16 +82,14 @@ export function PlayPage() {
     pendingCommandId.current = commandId;
     setBusy(true);
     setError(null);
-    setProgress("提交中…");
+    setProgress("接收改写");
     setChat((c) => [...c, { kind: "rewrite", text, commandId }]);
     setInput("");
 
     try {
       const result = await deduceStream(
         { commandId, rewriteText: text },
-        {
-          onProgress: (_phase, message) => setProgress(message),
-        },
+        { onProgress: (_p, message) => setProgress(message) },
       );
       setWorldState(result.worldState);
       setEvents((prev) => {
@@ -87,11 +98,7 @@ export function PlayPage() {
       });
       setChat((c) => [
         ...c,
-        {
-          kind: "narrative",
-          text: result.event.narrative.text,
-          outcome: result.outcome,
-        },
+        { kind: "narrative", text: result.event.narrative.text, outcome: result.outcome },
       ]);
       if (result.outcome === "duplicate") {
         setChat((c) => [
@@ -103,94 +110,231 @@ export function PlayPage() {
     } catch (err: unknown) {
       const msg =
         err instanceof ApiError
-          ? `${err.message}${err.retryable ? "（可重试，将使用同一命令 id）" : ""}`
+          ? `${err.message}${err.retryable ? "（可重试）" : ""}`
           : err instanceof Error
             ? err.message
             : "推演失败";
       setError(msg);
       setChat((c) => [...c, { kind: "system", text: msg }]);
-      // 保留 pendingCommandId 以便重试幂等
     } finally {
       setBusy(false);
       setProgress(null);
     }
   };
 
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    void runSubmit();
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      void runSubmit();
+    }
+  };
+
+  const scenarioLabel = session?.scenarioId === "custom" ? "自定义背景" : "赤壁之战";
+
+  const renderThread = (): ReactNode[] => {
+    const nodes: ReactNode[] = [];
+    let pair = 0;
+    for (let i = 0; i < chat.length; i++) {
+      const item = chat[i]!;
+      if (item.kind === "system") {
+        nodes.push(
+          <div key={`sys-${i}`} className="sys" role="status">
+            {item.text}
+          </div>,
+        );
+        continue;
+      }
+      if (item.kind === "rewrite") {
+        const next = chat[i + 1];
+        const narrative = next?.kind === "narrative" ? next : null;
+        pair += 1;
+        const n = String(pair).padStart(2, "0");
+        nodes.push(
+          <article key={`pair-${i}`} className="pair">
+            <div className="pair__rail mono" aria-hidden>
+              {n}
+            </div>
+            <div className="pair__stack">
+              <div className="cut">
+                <span className="tag tag--rewrite">改写</span>
+                <p>{item.text}</p>
+              </div>
+              {narrative ? (
+                <div className="fallout">
+                  <div className="fallout__head">
+                    <span className="tag tag--deduce">推演</span>
+                    {narrative.outcome === "duplicate" ? (
+                      <span className="tag tag--mute">幂等返回</span>
+                    ) : null}
+                  </div>
+                  <p>{narrative.text}</p>
+                </div>
+              ) : null}
+            </div>
+          </article>,
+        );
+        if (narrative) i += 1;
+        continue;
+      }
+      if (item.kind === "narrative") {
+        pair += 1;
+        nodes.push(
+          <article key={`nar-${i}`} className="pair">
+            <div className="pair__rail mono" aria-hidden>
+              {String(pair).padStart(2, "0")}
+            </div>
+            <div className="pair__stack">
+              <div className="fallout">
+                <div className="fallout__head">
+                  <span className="tag tag--deduce">推演</span>
+                  {item.outcome === "duplicate" ? (
+                    <span className="tag tag--mute">幂等返回</span>
+                  ) : null}
+                </div>
+                <p>{item.text}</p>
+              </div>
+            </div>
+          </article>,
+        );
+      }
+    }
+    return nodes;
+  };
+
   return (
-    <div className="play-layout">
-      <div className="play-main">
-        <header className="play-header">
-          <div>
-            <p className="eyebrow">
-              {session?.scenarioId === "custom" ? "自定义背景" : "赤壁之战"}
-            </p>
-            <h1 className="play-title">改写与推演</h1>
-            {session?.customBackground ? (
-              <p className="muted custom-bg">背景：{session.customBackground}</p>
+    <div className="stage" id="main-content">
+      <section className="stage__main" aria-label="改写与推演">
+        <header className="stage__bar">
+          <div className="stage__meta">
+            <span className="chip chip--hot">{scenarioLabel}</span>
+            {worldState ? (
+              <span className="chip chip--mono" title="模拟时刻">
+                {worldState.simulationTime}
+              </span>
             ) : null}
+            <span className="chip">非史实</span>
           </div>
-          <div className="play-actions">
-            <Link to="/">换场景</Link>
-            <button type="button" className="linkish" onClick={() => void hydrate()}>
-              刷新状态
+          <div className="stage__actions">
+            <Link className="btn btn--ghost btn--sm" to="/">
+              分岔口
+            </Link>
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => void hydrate()}
+              disabled={busy}
+            >
+              同步
             </button>
           </div>
         </header>
 
-        <p className="banner-sim" role="note">
-          以下为 AI 推演，不伪装为史实。
-        </p>
+        {session?.customBackground ? (
+          <p className="stage__bg">{session.customBackground}</p>
+        ) : null}
 
-        <div className="chat-log" ref={listRef} aria-live="polite">
+        <div className="thread" ref={listRef} aria-live="polite">
           {chat.length === 0 ? (
-            <p className="muted">试着输入：那天江上刮西北风</p>
-          ) : null}
-          {chat.map((item, i) => (
-            <div key={i} className={`chat-bubble ${item.kind}`}>
-              {item.kind === "rewrite" ? (
-                <>
-                  <span className="tag">你的改写</span>
-                  <p>{item.text}</p>
-                </>
-              ) : null}
-              {item.kind === "narrative" ? (
-                <>
-                  <span className="tag sim">推演叙事</span>
-                  <p>{item.text}</p>
-                  {item.outcome === "duplicate" ? (
-                    <p className="muted">（幂等：duplicate）</p>
-                  ) : null}
-                </>
-              ) : null}
-              {item.kind === "system" ? <p className="muted">{item.text}</p> : null}
+            <div className="thread__empty">
+              <p className="kicker">卷首空白</p>
+              <h2>写下第一笔改写</h2>
+              <p>
+                任意颗粒度均可——一句风向、一条盟约、一次退兵。
+                <kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>Enter</kbd> 提交后，推演写入事件日志与世界状态。
+              </p>
+              <div className="seeds">
+                {SUGGESTIONS.map((s) => (
+                  <button key={s} type="button" className="seed" onClick={() => setInput(s)}>
+                    <span className="seed__mark" aria-hidden>
+                      改
+                    </span>
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
-          ))}
-          {progress ? <p className="progress">{progress}</p> : null}
+          ) : null}
+
+          {renderThread()}
+
+          {progress ? (
+            <div className="phase" role="status">
+              <span className="phase__dot" aria-hidden />
+              <span>{progress}</span>
+            </div>
+          ) : null}
         </div>
 
-        {error ? <p className="error">{error}</p> : null}
+        {error ? (
+          <div className="alert alert--inline" role="alert">
+            {error}
+          </div>
+        ) : null}
 
-        <form className="composer" onSubmit={(e) => void submit(e)}>
-          <label className="sr-only" htmlFor="rewrite-input">
-            改写内容
-          </label>
-          <textarea
-            id="rewrite-input"
-            value={input}
-            onChange={(ev) => setInput(ev.target.value)}
-            placeholder="自由输入任意颗粒度的改写…"
-            rows={2}
-            disabled={busy}
-          />
-          <button type="submit" className="primary" disabled={busy || !input.trim()}>
-            {busy ? "推演中…" : "提交改写"}
-          </button>
+        <form className="write" onSubmit={onSubmit}>
+          <div className="write__frame">
+            <label className="sr-only" htmlFor="rewrite-input">
+              改写内容
+            </label>
+            <div className="write__edge" aria-hidden>
+              改
+            </div>
+            <textarea
+              id="rewrite-input"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="在此切开历史…"
+              rows={3}
+              disabled={busy}
+            />
+            <div className="write__bar">
+              <span className="write__hint mono">
+                {input.length > 0 ? `${input.length}/4000` : "Ctrl / ⌘ + Enter"}
+              </span>
+              <button
+                type="submit"
+                className="btn btn--solid btn--sm"
+                disabled={busy || !input.trim()}
+              >
+                {busy ? "推演中…" : "提交推演"}
+              </button>
+            </div>
+          </div>
         </form>
+      </section>
 
-        <EventLog events={events} />
-      </div>
-
-      <GodPanel worldState={worldState} />
+      <aside className="stage__side" aria-label="世界状态与事件">
+        <div className="tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            className={sideTab === "world" ? "tabs__btn is-on" : "tabs__btn"}
+            aria-selected={sideTab === "world"}
+            onClick={() => setSideTab("world")}
+          >
+            世界状态
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={sideTab === "events" ? "tabs__btn is-on" : "tabs__btn"}
+            aria-selected={sideTab === "events"}
+            onClick={() => setSideTab("events")}
+          >
+            事件日志
+            {events.length > 0 ? <span className="tabs__n mono">{events.length}</span> : null}
+          </button>
+        </div>
+        <div className="stage__panel">
+          {sideTab === "world" ? <GodPanel worldState={worldState} /> : <EventLog events={events} />}
+        </div>
+      </aside>
     </div>
   );
 }

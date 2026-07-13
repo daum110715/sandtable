@@ -2,32 +2,39 @@ import type { DeductionEvent } from "../api/types.js";
 
 export function EventLog({ events }: { events: readonly DeductionEvent[] }) {
   return (
-    <section className="event-log" aria-label="事件日志">
-      <h2>事件日志</h2>
-      <p className="muted">按追加顺序回溯改写与推演（不可原地修改）</p>
+    <div className="elog">
+      <header className="elog__head">
+        <p className="kicker">只追加 · 按序回溯</p>
+        <h2>事件日志</h2>
+      </header>
+
       {events.length === 0 ? (
-        <p className="muted">尚无事件。输入一条改写开始推演。</p>
+        <p className="elog__empty">尚无事件。提交改写后，改写与推演结果将按序归档于此。</p>
       ) : (
-        <ol className="event-list">
+        <ol className="elog__list">
           {events.map((ev, i) => (
-            <li key={ev.id}>
-              <div className="event-meta">
-                #{i + 1} · {ev.simulationTime}
-                {ev.commandId ? ` · ${ev.commandId.slice(0, 8)}…` : ""}
+            <li key={ev.id} className="elog__item">
+              <div className="elog__idx mono" aria-hidden>
+                {String(i + 1).padStart(2, "0")}
               </div>
-              <div className="event-rewrite">
-                <span className="tag">改写</span> {ev.rewrite.text}
-              </div>
-              <div className="event-narrative">
-                <span className="tag sim">推演</span> {ev.narrative.text}
-              </div>
-              <div className="event-changes muted">
-                状态变更 {ev.stateChanges.length} 项
+              <div className="elog__body">
+                <div className="elog__meta mono">
+                  <time>{ev.simulationTime}</time>
+                  <span>{ev.stateChanges.length} 变更</span>
+                </div>
+                <div className="elog__block">
+                  <span className="tag tag--rewrite">改写</span>
+                  <p>{ev.rewrite.text}</p>
+                </div>
+                <div className="elog__block elog__block--nar">
+                  <span className="tag tag--deduce">推演</span>
+                  <p>{ev.narrative.text}</p>
+                </div>
               </div>
             </li>
           ))}
         </ol>
       )}
-    </section>
+    </div>
   );
 }
