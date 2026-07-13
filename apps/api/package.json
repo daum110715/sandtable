@@ -10,6 +10,7 @@
     "test": "vitest run --config ../../vitest.config.ts"
   },
   "dependencies": {
+    "@fastify/cors": "^11.3.0",
     "@sandtable/agents": "*",
     "@sandtable/domain": "*",
     "@sandtable/persistence": "*",

@@ -10,7 +10,7 @@ if (dbPath !== ":memory:") {
   mkdirSync(dirname(dbPath), { recursive: true });
 }
 
-const app = buildApp({ dbPath });
+const app = await buildApp({ dbPath });
 
 try {
   await app.listen({ host, port });

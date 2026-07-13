@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildApp } from "./app.js";
 
-const apps: Array<ReturnType<typeof buildApp>> = [];
+const apps: Array<Awaited<ReturnType<typeof buildApp>>> = [];
 const dirs: string[] = [];
 
 afterEach(async () => {
@@ -17,7 +17,7 @@ afterEach(async () => {
 
 describe("API framework", () => {
   it("reports health without external services", async () => {
-    const app = buildApp();
+    const app = await buildApp();
     apps.push(app);
     const response = await app.inject({ method: "GET", url: "/health" });
 
@@ -26,7 +26,7 @@ describe("API framework", () => {
   });
 
   it("reports ready when sqlite is available", async () => {
-    const app = buildApp({ dbPath: ":memory:", agentMode: "stub" });
+    const app = await buildApp({ dbPath: ":memory:", agentMode: "stub" });
     apps.push(app);
     const response = await app.inject({ method: "GET", url: "/ready" });
     expect(response.statusCode).toBe(200);
@@ -37,13 +37,21 @@ describe("API framework", () => {
     });
   });
 
+  it("lists scenarios", async () => {
+    const app = await buildApp({ agentMode: "stub" });
+    apps.push(app);
+    const res = await app.inject({ method: "GET", url: "/api/v1/scenarios" });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().scenarios.length).toBeGreaterThanOrEqual(1);
+  });
+
   it("deduce writes event and is idempotent; reopen keeps data", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "sandtable-api-m3-"));
+    const dir = mkdtempSync(join(tmpdir(), "sandtable-api-m5-"));
     dirs.push(dir);
     const dbPath = join(dir, "api.sqlite");
 
     {
-      const app = buildApp({ dbPath, agentMode: "stub" });
+      const app = await buildApp({ dbPath, agentMode: "stub" });
       apps.push(app);
 
       const first = await app.inject({
@@ -69,7 +77,7 @@ describe("API framework", () => {
     }
 
     {
-      const app = buildApp({ dbPath, agentMode: "stub" });
+      const app = await buildApp({ dbPath, agentMode: "stub" });
       apps.push(app);
       const events = await app.inject({ method: "GET", url: "/api/v1/events" });
       expect(events.json().length).toBe(1);
@@ -92,7 +100,7 @@ describe("API framework", () => {
       id: "y" as never,
       record: async () => ({ stateChanges: [], narrative: { text: "" } }),
     };
-    const app = buildApp({
+    const app = await buildApp({
       dbPath: ":memory:",
       actor,
       recorder,
@@ -110,5 +118,38 @@ describe("API framework", () => {
 
     const events = await app.inject({ method: "GET", url: "/api/v1/events" });
     expect(events.json().length).toBe(0);
+  });
+
+  it("resets session clearing events", async () => {
+    const app = await buildApp({ agentMode: "stub" });
+    apps.push(app);
+    await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload: { commandId: "r1", rewriteText: "那天江上刮西北风" },
+    });
+    const reset = await app.inject({
+      method: "POST",
+      url: "/api/v1/session/reset",
+      payload: { scenarioId: "chibi" },
+    });
+    expect(reset.statusCode).toBe(200);
+    expect(reset.json().events).toEqual([]);
+    const events = await app.inject({ method: "GET", url: "/api/v1/events" });
+    expect(events.json().length).toBe(0);
+  });
+
+  it("streams deduce progress over SSE", async () => {
+    const app = await buildApp({ agentMode: "stub" });
+    apps.push(app);
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce/stream",
+      payload: { commandId: "sse-1", rewriteText: "那天江上刮西北风" },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/event-stream");
+    expect(res.body).toContain("event: progress");
+    expect(res.body).toContain("event: result");
   });
 });
