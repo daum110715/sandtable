@@ -27,5 +27,6 @@ export const asRelationId = (s: string): RelationId => s as RelationId;
 export const asEventId = (s: string): EventId => s as EventId;
 export const asSessionId = (s: string): SessionId => s as SessionId;
 export const asAgentId = (s: string): AgentId => s as AgentId;
-export const asSimulationTime = (s: string): SimulationTime => s as SimulationTime;
+export const asSimulationTime = (s: string): SimulationTime =>
+  s as SimulationTime;
 export const asCommandId = (s: string): CommandId => s as CommandId;

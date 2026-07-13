@@ -14,4 +14,3 @@
 - “publish to the issue tracker”表示创建 GitHub Issue。
 - “fetch the relevant ticket”表示读取对应 Issue 的正文、标签和评论。
 - 仓库由当前目录的 `origin` 自动推断。
-

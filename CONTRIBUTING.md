@@ -28,14 +28,14 @@
 
 ### 贡献类型
 
-| 类型 | 说明 | 入门难度 |
-|:-----|:-----|:---------|
-| 🐛 **Bug 报告** | 发现并报告问题 | ⭐ |
-| 📝 **文档改进** | 修正错别字、补充说明、翻译 | ⭐ |
-| 💡 **功能建议** | 提出新功能或改进建议 | ⭐⭐ |
-| 🧪 **测试补充** | 增加测试覆盖率 | ⭐⭐ |
-| 🔧 **代码贡献** | 修复 Bug 或实现新功能 | ⭐⭐⭐ |
-| 🏗️ **架构设计** | 参与架构讨论和决策 | ⭐⭐⭐⭐ |
+| 类型            | 说明                       | 入门难度 |
+| :-------------- | :------------------------- | :------- |
+| 🐛 **Bug 报告** | 发现并报告问题             | ⭐       |
+| 📝 **文档改进** | 修正错别字、补充说明、翻译 | ⭐       |
+| 💡 **功能建议** | 提出新功能或改进建议       | ⭐⭐     |
+| 🧪 **测试补充** | 增加测试覆盖率             | ⭐⭐     |
+| 🔧 **代码贡献** | 修复 Bug 或实现新功能      | ⭐⭐⭐   |
+| 🏗️ **架构设计** | 参与架构讨论和决策         | ⭐⭐⭐⭐ |
 
 ### 第一次贡献？
 
@@ -104,6 +104,7 @@ main (受保护)
 - 简要描述变更内容
 
 示例：
+
 - `feat/event-ledger-inmemory`
 - `fix/health-check-timeout`
 - `docs/architecture-diagram`
@@ -127,18 +128,18 @@ main (受保护)
 
 ### 类型（type）
 
-| 类型 | 说明 | 示例 |
-|:-----|:-----|:-----|
-| `feat` | 新功能 | `feat(domain): add EventId branded type` |
-| `fix` | Bug 修复 | `fix(api): health check timeout` |
-| `docs` | 文档更新 | `docs(readme): add architecture diagram` |
-| `style` | 代码格式（不影响功能） | `style(web): fix indentation` |
-| `refactor` | 重构（既不修复 Bug 也不添加功能） | `refactor(api): extract route handlers` |
-| `perf` | 性能优化 | `perf(worker): cache model responses` |
-| `test` | 测试补充 | `test(domain): add WorldlineId tests` |
-| `chore` | 构建/工具链变更 | `chore: update vitest config` |
-| `ci` | CI 配置变更 | `ci: add GitHub Actions workflow` |
-| `revert` | 回滚 | `revert: revert feat(xxx)` |
+| 类型       | 说明                              | 示例                                     |
+| :--------- | :-------------------------------- | :--------------------------------------- |
+| `feat`     | 新功能                            | `feat(domain): add EventId branded type` |
+| `fix`      | Bug 修复                          | `fix(api): health check timeout`         |
+| `docs`     | 文档更新                          | `docs(readme): add architecture diagram` |
+| `style`    | 代码格式（不影响功能）            | `style(web): fix indentation`            |
+| `refactor` | 重构（既不修复 Bug 也不添加功能） | `refactor(api): extract route handlers`  |
+| `perf`     | 性能优化                          | `perf(worker): cache model responses`    |
+| `test`     | 测试补充                          | `test(domain): add WorldlineId tests`    |
+| `chore`    | 构建/工具链变更                   | `chore: update vitest config`            |
+| `ci`       | CI 配置变更                       | `ci: add GitHub Actions workflow`        |
+| `revert`   | 回滚                              | `revert: revert feat(xxx)`               |
 
 ### 范围（scope）
 
@@ -299,30 +300,30 @@ npm run format:check
 
 ### 命名规范
 
-| 类型 | 规范 | 示例 |
-|:-----|:-----|:-----|
-| 文件名 | kebab-case | `event-ledger.ts` |
-| 类名 | PascalCase | `WorldlineId` |
-| 接口名 | PascalCase（无 `I` 前缀） | `WorkerStatus` |
-| 函数名 | camelCase | `getWorkerStatus` |
-| 常量 | UPPER_SNAKE_CASE | `systemIdentity` |
-| 变量 | camelCase | `simulationTime` |
-| 品牌化类型 | PascalCase + `Id` 后缀 | `WorldlineId`, `ActorId`, `EventId` |
+| 类型       | 规范                      | 示例                                |
+| :--------- | :------------------------ | :---------------------------------- |
+| 文件名     | kebab-case                | `event-ledger.ts`                   |
+| 类名       | PascalCase                | `WorldlineId`                       |
+| 接口名     | PascalCase（无 `I` 前缀） | `WorkerStatus`                      |
+| 函数名     | camelCase                 | `getWorkerStatus`                   |
+| 常量       | UPPER_SNAKE_CASE          | `systemIdentity`                    |
+| 变量       | camelCase                 | `simulationTime`                    |
+| 品牌化类型 | PascalCase + `Id` 后缀    | `WorldlineId`, `ActorId`, `EventId` |
 
 ### 导入规范
 
 ```typescript
 // 1. Node.js 内置模块
-import { readFileSync } from 'node:fs'
+import { readFileSync } from "node:fs";
 
 // 2. 第三方模块
-import Fastify from 'fastify'
+import Fastify from "fastify";
 
 // 3. 项目内部模块（使用包名）
-import { systemIdentity } from '@sandtable/domain'
+import { systemIdentity } from "@sandtable/domain";
 
 // 4. 相对路径（同一包内）
-import { getWorkerStatus } from './status.js'
+import { getWorkerStatus } from "./status.js";
 ```
 
 > **注意**：由于启用了 `verbatimModuleSyntax`，ESM 导入必须包含 `.js` 扩展名。
@@ -334,7 +335,8 @@ import { getWorkerStatus } from './status.js'
 ### 文档语言
 
 - 项目文档使用**简体中文**
-- 代码注释使用**英文**（推荐）
+- 源文件注释使用**简体中文**（JSDoc + inline）
+- 测试文件的 `describe`/`it` 名称使用**英文**
 - Commit 信息使用**英文**
 
 ### 文档结构
@@ -347,15 +349,15 @@ import { getWorkerStatus } from './status.js'
 
 编写文档时**必须**使用 [CONTEXT.md](CONTEXT.md) 中定义的规范术语。示例：
 
-| ✅ 正确 | ❌ 避免 |
-|:--------|:--------|
+| ✅ 正确  | ❌ 避免            |
+| :------- | :----------------- |
 | 历史基线 | 初始数据、背景故事 |
-| 世界线 | 存档、剧本 |
-| 事件 | 消息、日志 |
-| 改写者 | 玩家角色、上帝视角 |
+| 世界线   | 存档、剧本         |
+| 事件     | 消息、日志         |
+| 改写者   | 玩家角色、上帝视角 |
 | 改写指令 | 行动意图、用户消息 |
-| 行动意图 | 命令、事件 |
-| 裁决 | 生成、执行 |
+| 行动意图 | 命令、事件         |
+| 裁决     | 生成、执行         |
 | 认知回合 | 模拟回合、世界更新 |
 
 ### 决策记录
@@ -430,18 +432,18 @@ import { getWorkerStatus } from './status.js'
 
 ### Issue 标签
 
-| 标签 | 说明 |
-|:-----|:-----|
-| `needs-triage` | 待分类 |
-| `needs-info` | 需要更多信息 |
-| `ready-for-agent` | 可由 AI Agent 处理 |
-| `ready-for-human` | 需要人工处理 |
-| `good first issue` | 适合新手 |
-| `help wanted` | 需要帮助 |
-| `bug` | Bug 报告 |
-| `enhancement` | 功能增强 |
-| `documentation` | 文档相关 |
-| `question` | 问题咨询 |
+| 标签               | 说明               |
+| :----------------- | :----------------- |
+| `needs-triage`     | 待分类             |
+| `needs-info`       | 需要更多信息       |
+| `ready-for-agent`  | 可由 AI Agent 处理 |
+| `ready-for-human`  | 需要人工处理       |
+| `good first issue` | 适合新手           |
+| `help wanted`      | 需要帮助           |
+| `bug`              | Bug 报告           |
+| `enhancement`      | 功能增强           |
+| `documentation`    | 文档相关           |
+| `question`         | 问题咨询           |
 
 ---
 
@@ -467,13 +469,13 @@ import { getWorkerStatus } from './status.js'
 
 ### 现有 ADR
 
-| 编号 | 标题 | 状态 |
-|:-----|:-----|:-----|
-| [ADR-0001](docs/adr/0001-use-pi-as-agent-foundation.md) | 使用 Pi 作为 Agent 基础 | ✅ Accepted |
-| [ADR-0002](docs/adr/0002-event-ledger-is-world-authority.md) | 事件账本是世界权威 | ✅ Accepted |
-| [ADR-0003](docs/adr/0003-ai-proposes-rules-decide.md) | AI 提出，规则决定 | ✅ Accepted |
-| [ADR-0004](docs/adr/0004-separate-history-from-simulation.md) | 历史与模拟分离 | ✅ Accepted |
-| [ADR-0005](docs/adr/0005-user-is-root-history-rewriter.md) | 用户是 Root 改写者 | ✅ Accepted |
+| 编号                                                          | 标题                    | 状态        |
+| :------------------------------------------------------------ | :---------------------- | :---------- |
+| [ADR-0001](docs/adr/0001-use-pi-as-agent-foundation.md)       | 使用 Pi 作为 Agent 基础 | ✅ Accepted |
+| [ADR-0002](docs/adr/0002-event-ledger-is-world-authority.md)  | 事件账本是世界权威      | ✅ Accepted |
+| [ADR-0003](docs/adr/0003-ai-proposes-rules-decide.md)         | AI 提出，规则决定       | ✅ Accepted |
+| [ADR-0004](docs/adr/0004-separate-history-from-simulation.md) | 历史与模拟分离          | ✅ Accepted |
+| [ADR-0005](docs/adr/0005-user-is-root-history-rewriter.md)    | 用户是 Root 改写者      | ✅ Accepted |
 
 ---
 

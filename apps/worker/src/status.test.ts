@@ -6,8 +6,7 @@ describe("worker framework", () => {
     expect(getWorkerStatus()).toEqual({
       name: "sandtable-worker",
       status: "ready",
-      protocolVersion: "v1"
+      protocolVersion: "v1",
     });
   });
 });
-

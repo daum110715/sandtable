@@ -3,10 +3,9 @@
   "compilerOptions": {
     "composite": true,
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": ["node"]
   },
-  "references": [
-    { "path": "../../packages/domain" }
-  ],
+  "references": [{ "path": "../../packages/domain" }],
   "include": ["src"]
 }

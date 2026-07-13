@@ -34,7 +34,8 @@ export interface Narrative {
   readonly actorAgentId?: AgentId;
 }
 
-export type EntityKind = "person" | "faction" | "resource" | "location" | "relation";
+export type EntityKind =
+  "person" | "faction" | "resource" | "location" | "relation";
 
 // 结构化状态变更：可应用的判别式联合，M2 内存数据库消费。
 export interface CreateChange {

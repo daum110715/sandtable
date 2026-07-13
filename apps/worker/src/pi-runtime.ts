@@ -3,7 +3,7 @@ import type { createAgentSession } from "@earendil-works/pi-coding-agent";
 import type { Api, Model } from "@earendil-works/pi-ai";
 
 export const piRuntime = {
-  Agent
+  Agent,
 };
 
 export type PiModel = Model<Api>;

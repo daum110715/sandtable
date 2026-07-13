@@ -20,14 +20,14 @@ M4 需接入真实模型推演。D007/D014/D015 待定。Worker 仓库内已有 
 
 ### D014 供应商
 
-1. DeepSeek  
-2. xAI / OpenAI / 火山方舟等  
+1. DeepSeek
+2. xAI / OpenAI / 火山方舟等
 
 ### D015 接入
 
-1. API 同进程 SDK  
-2. 本仓库 Node Worker 进程  
-3. 同进程起步、预留 Worker  
+1. API 同进程 SDK
+2. 本仓库 Node Worker 进程
+3. 同进程起步、预留 Worker
 
 ## Decision
 
@@ -49,5 +49,5 @@ M4 需接入真实模型推演。D007/D014/D015 待定。Worker 仓库内已有 
 
 ## Confirmation
 
-- 确认人：项目所有者  
-- 确认日期：2026-07-13  
+- 确认人：项目所有者
+- 确认日期：2026-07-13

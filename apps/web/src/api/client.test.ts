@@ -3,7 +3,11 @@ import { ApiError, withRetry } from "./client.js";
 
 describe("ApiError", () => {
   it("marks 5xx as retryable by default", () => {
-    const e = new ApiError(503, { error: "timeout", code: "timeout", retryable: true });
+    const e = new ApiError(503, {
+      error: "timeout",
+      code: "timeout",
+      retryable: true,
+    });
     expect(e.retryable).toBe(true);
     expect(e.code).toBe("timeout");
   });
@@ -25,7 +29,9 @@ describe("withRetry", () => {
     const fn = vi.fn(async () => {
       throw new ApiError(422, { error: "bad", retryable: false });
     });
-    await expect(withRetry(fn, { attempts: 3 })).rejects.toMatchObject({ status: 422 });
+    await expect(withRetry(fn, { attempts: 3 })).rejects.toMatchObject({
+      status: 422,
+    });
     expect(fn).toHaveBeenCalledTimes(1);
   });
 });

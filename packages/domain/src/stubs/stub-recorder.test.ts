@@ -14,7 +14,13 @@ const record = async (intendedChanges: readonly IntendedChange[]) =>
 
 describe("StubRecorderAgent", () => {
   it("turns wind intent into an update change", async () => {
-    const out = await record([{ description: "风向变化", entity: "resource", targetId: "resource-wind" }]);
+    const out = await record([
+      {
+        description: "风向变化",
+        entity: "resource",
+        targetId: "resource-wind",
+      },
+    ]);
     expect(out.stateChanges).toHaveLength(1);
     expect(out.stateChanges[0]?.op).toBe("update");
   });
@@ -22,7 +28,11 @@ describe("StubRecorderAgent", () => {
   it("turns northwest wind intents into two changes", async () => {
     const out = await record([
       { description: "风向", entity: "resource", targetId: "resource-wind" },
-      { description: "水寨", entity: "resource", targetId: "resource-sun-fleet" },
+      {
+        description: "水寨",
+        entity: "resource",
+        targetId: "resource-sun-fleet",
+      },
     ]);
     expect(out.stateChanges).toHaveLength(2);
     const first = out.stateChanges[0];

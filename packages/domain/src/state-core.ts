@@ -1,6 +1,7 @@
 // 状态应用内核：不可变 StateChange 应用、仅追加事件日志与按序回溯。
-// M1 用这些函数验证协议闭环；M2 的 Store / EventLog / Orchestrator 复用同一内核。
+// Store / EventLog / Orchestrator 复用同一内核。
 
+import { DomainError } from "./errors.js";
 import type {
   CommandId,
   EventId,
@@ -49,7 +50,10 @@ const updateEntity = <K extends string, V>(
 ): Readonly<Record<K, V>> => {
   const existing = coll[id];
   if (!existing) {
-    throw new Error(`entity ${String(id)} not found for update`);
+    throw new DomainError(
+      "not_found",
+      `entity ${String(id)} not found for update`,
+    );
   }
   return { ...coll, [id]: { ...existing, ...patch } as V };
 };
@@ -59,7 +63,8 @@ const applyPerson = (
   change: StateChange,
 ): Readonly<Record<PersonId, Person>> => {
   if (change.op === "create") return setEntity(persons, change.value as Person);
-  if (change.op === "delete") return removeEntity(persons, change.id as PersonId);
+  if (change.op === "delete")
+    return removeEntity(persons, change.id as PersonId);
   return updateEntity(persons, change.id as PersonId, change.patch);
 };
 
@@ -67,8 +72,10 @@ const applyFaction = (
   factions: Readonly<Record<FactionId, Faction>>,
   change: StateChange,
 ): Readonly<Record<FactionId, Faction>> => {
-  if (change.op === "create") return setEntity(factions, change.value as Faction);
-  if (change.op === "delete") return removeEntity(factions, change.id as FactionId);
+  if (change.op === "create")
+    return setEntity(factions, change.value as Faction);
+  if (change.op === "delete")
+    return removeEntity(factions, change.id as FactionId);
   return updateEntity(factions, change.id as FactionId, change.patch);
 };
 
@@ -76,8 +83,10 @@ const applyResource = (
   resources: Readonly<Record<ResourceId, Resource>>,
   change: StateChange,
 ): Readonly<Record<ResourceId, Resource>> => {
-  if (change.op === "create") return setEntity(resources, change.value as Resource);
-  if (change.op === "delete") return removeEntity(resources, change.id as ResourceId);
+  if (change.op === "create")
+    return setEntity(resources, change.value as Resource);
+  if (change.op === "delete")
+    return removeEntity(resources, change.id as ResourceId);
   return updateEntity(resources, change.id as ResourceId, change.patch);
 };
 
@@ -85,8 +94,10 @@ const applyLocation = (
   locations: Readonly<Record<LocationId, Location>>,
   change: StateChange,
 ): Readonly<Record<LocationId, Location>> => {
-  if (change.op === "create") return setEntity(locations, change.value as Location);
-  if (change.op === "delete") return removeEntity(locations, change.id as LocationId);
+  if (change.op === "create")
+    return setEntity(locations, change.value as Location);
+  if (change.op === "delete")
+    return removeEntity(locations, change.id as LocationId);
   return updateEntity(locations, change.id as LocationId, change.patch);
 };
 
@@ -94,12 +105,17 @@ const applyRelation = (
   relations: Readonly<Record<RelationId, Relation>>,
   change: StateChange,
 ): Readonly<Record<RelationId, Relation>> => {
-  if (change.op === "create") return setEntity(relations, change.value as Relation);
-  if (change.op === "delete") return removeEntity(relations, change.id as RelationId);
+  if (change.op === "create")
+    return setEntity(relations, change.value as Relation);
+  if (change.op === "delete")
+    return removeEntity(relations, change.id as RelationId);
   return updateEntity(relations, change.id as RelationId, change.patch);
 };
 
-export const applyStateChange = (state: WorldState, change: StateChange): WorldState => {
+export const applyStateChange = (
+  state: WorldState,
+  change: StateChange,
+): WorldState => {
   switch (change.entity) {
     case "person":
       return { ...state, persons: applyPerson(state.persons, change) };
@@ -117,7 +133,8 @@ export const applyStateChange = (state: WorldState, change: StateChange): WorldS
 export const applyStateChanges = (
   state: WorldState,
   changes: readonly StateChange[],
-): WorldState => changes.reduce<WorldState>((s, change) => applyStateChange(s, change), state);
+): WorldState =>
+  changes.reduce<WorldState>((s, change) => applyStateChange(s, change), state);
 
 export const appendEvent = (
   log: readonly DeductionEvent[],
@@ -129,7 +146,10 @@ export const replay = (
   initialState: WorldState,
   log: readonly DeductionEvent[],
 ): WorldState =>
-  log.reduce<WorldState>((state, ev) => applyStateChanges(state, ev.stateChanges), initialState);
+  log.reduce<WorldState>(
+    (state, ev) => applyStateChanges(state, ev.stateChanges),
+    initialState,
+  );
 
 export interface BuildEventArgs {
   readonly id: EventId;
@@ -160,5 +180,7 @@ export const buildEvent = (args: BuildEventArgs): DeductionEvent => ({
       : { rewrite: args.rewrite },
   ...(args.sessionId !== undefined ? { sessionId: args.sessionId } : {}),
   ...(args.commandId !== undefined ? { commandId: args.commandId } : {}),
-  ...(args.agentVersion !== undefined ? { agentVersion: args.agentVersion } : {}),
+  ...(args.agentVersion !== undefined
+    ? { agentVersion: args.agentVersion }
+    : {}),
 });

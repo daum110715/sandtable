@@ -1,9 +1,9 @@
 ---
 name: 功能建议
 about: 提出一个新功能或改进建议
-title: '[Feature] '
+title: "[Feature] "
 labels: enhancement, needs-triage
-assignees: ''
+assignees: ""
 ---
 
 ## 功能描述

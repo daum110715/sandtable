@@ -5,7 +5,10 @@ import { assertActorOutputIsStateless } from "../invariants.js";
 
 const agent = new StubActorAgent();
 const deduce = async (text: string): Promise<ActorOutput> =>
-  agent.deduce({ worldState: undefined as never, rewrite: { text, submittedAt: "2026-07-12T00:00:00.000Z" } });
+  agent.deduce({
+    worldState: undefined as never,
+    rewrite: { text, submittedAt: "2026-07-12T00:00:00.000Z" },
+  });
 
 describe("StubActorAgent", () => {
   it("has stable id", () => {

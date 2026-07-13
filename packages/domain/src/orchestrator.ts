@@ -2,7 +2,12 @@
 // 幂等：相同 commandId 不重复产生事件、不二次调用 Agent。
 // M3：通过 runInTransaction 与持久化 adapter 对齐真实 DB 事务。
 
-import type { ActorAgent, ActorOutput, RecorderAgent, RecorderOutput } from "./agents.js";
+import type {
+  ActorAgent,
+  ActorOutput,
+  RecorderAgent,
+  RecorderOutput,
+} from "./agents.js";
 import type { DeductionEvent, Rewrite } from "./events.js";
 import type { CommandId, EventId, SessionId, SimulationTime } from "./ids.js";
 import { asEventId } from "./ids.js";
@@ -10,7 +15,7 @@ import {
   assertActorOutputIsStateless,
   assertStateChangesAreValid,
 } from "./invariants.js";
-import { applyStateChanges, buildEvent } from "./m1-loop.js";
+import { applyStateChanges, buildEvent } from "./state-core.js";
 import type { WorldState } from "./world-state.js";
 import type { EventLog } from "./event-log.js";
 import type { WorldStateStore } from "./world-state-store.js";
@@ -68,7 +73,8 @@ export class DeductionOrchestrator {
         return asEventId(`event-${this.#eventSeq}`);
       });
     this.#now = options.now ?? (() => new Date().toISOString());
-    this.#runInTransaction = options.runInTransaction ?? (<T>(fn: () => T) => fn());
+    this.#runInTransaction =
+      options.runInTransaction ?? (<T>(fn: () => T) => fn());
   }
 
   async deduce(command: DeduceCommand): Promise<DeduceResult> {
@@ -98,8 +104,12 @@ export class DeductionOrchestrator {
     });
     assertStateChangesAreValid(recorderOutput.stateChanges);
 
-    const nextSimulationTime = recorderOutput.nextSimulationTime ?? simulationTime;
-    const nextStateBase = applyStateChanges(state0, recorderOutput.stateChanges);
+    const nextSimulationTime =
+      recorderOutput.nextSimulationTime ?? simulationTime;
+    const nextStateBase = applyStateChanges(
+      state0,
+      recorderOutput.stateChanges,
+    );
     const nextState: WorldState =
       nextStateBase.simulationTime === nextSimulationTime
         ? nextStateBase
@@ -116,7 +126,9 @@ export class DeductionOrchestrator {
       commandId: command.commandId,
       recordedAt: this.#now(),
       ...(previous !== undefined ? { previousEventId: previous.id } : {}),
-      ...(command.sessionId !== undefined ? { sessionId: command.sessionId } : {}),
+      ...(command.sessionId !== undefined
+        ? { sessionId: command.sessionId }
+        : {}),
     });
 
     // 事务提交点：状态与事件同步前进；此前失败则两者均未改。

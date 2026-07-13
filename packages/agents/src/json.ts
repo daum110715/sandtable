@@ -18,6 +18,8 @@ export const parseJsonObject = (text: string): unknown => {
         // fall through
       }
     }
-    throw new AgentError("invalid_output", "model output is not valid JSON", { cause: e });
+    throw new AgentError("invalid_output", "model output is not valid JSON", {
+      cause: e,
+    });
   }
 };

@@ -1,11 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ActorAgent, ActorOutput, RecorderAgent, RecorderOutput } from "./agents.js";
-import { asAgentId, asCommandId, asEventId, asResourceId } from "./ids.js";
+import type {
+  ActorAgent,
+  ActorOutput,
+  RecorderAgent,
+  RecorderOutput,
+} from "./agents.js";
 import {
-  assertCausalChain,
-  assertDeepEqual,
-} from "./invariants.js";
-import { replay } from "./m1-loop.js";
+  asAgentId,
+  asCommandId,
+  asEventId,
+  asResourceId,
+  asSimulationTime,
+} from "./ids.js";
+import { assertCausalChain, assertDeepEqual } from "./invariants.js";
+import { replay } from "./state-core.js";
 import { DeductionOrchestrator } from "./orchestrator.js";
 import { InMemoryEventLog } from "./event-log.js";
 import { InMemoryWorldStateStore } from "./world-state-store.js";
@@ -16,6 +24,7 @@ import { StubRecorderAgent } from "./stubs/stub-recorder.js";
 const setup = (opts?: {
   actor?: ActorAgent;
   recorder?: RecorderAgent;
+  simulationTime?: string;
 }) => {
   const store = new InMemoryWorldStateStore(chibiInitialState);
   const eventLog = new InMemoryEventLog();
@@ -49,13 +58,40 @@ describe("DeductionOrchestrator", () => {
     expect(result.event.commandId).toBe("cmd-nw-wind");
     expect(result.event.rewrite).toEqual(chibiRewrites.fine);
     expect(result.event.stateChanges.length).toBeGreaterThan(0);
-    expect(result.worldState.resources[asResourceId("resource-wind")]?.attributes?.direction).toBe(
-      "西北风",
-    );
+    expect(
+      result.worldState.resources[asResourceId("resource-wind")]?.attributes
+        ?.direction,
+    ).toBe("西北风");
     expect(store.getState()).toBe(result.worldState);
     expect(eventLog.length).toBe(1);
     expect(eventLog.last()?.id).toBe("e1");
     expect(result.event.causal.previousEventId).toBeUndefined();
+  });
+
+  it("returns actorOutput and recorderOutput on applied path", async () => {
+    const { orchestrator } = setup();
+    const result = await orchestrator.deduce({
+      commandId: asCommandId("cmd-out"),
+      rewrite: chibiRewrites.fine,
+    });
+    expect(result.outcome).toBe("applied");
+    expect(result.actorOutput).toBeDefined();
+    expect(result.recorderOutput).toBeDefined();
+  });
+
+  it("returns undefined actorOutput/recorderOutput on duplicate path", async () => {
+    const { orchestrator } = setup();
+    await orchestrator.deduce({
+      commandId: asCommandId("cmd-dup-check"),
+      rewrite: chibiRewrites.fine,
+    });
+    const dup = await orchestrator.deduce({
+      commandId: asCommandId("cmd-dup-check"),
+      rewrite: chibiRewrites.fine,
+    });
+    expect(dup.outcome).toBe("duplicate");
+    expect(dup.actorOutput).toBeUndefined();
+    expect(dup.recorderOutput).toBeUndefined();
   });
 
   it("idempotent: same commandId does not re-run agents or append events", async () => {
@@ -164,5 +200,15 @@ describe("DeductionOrchestrator", () => {
     });
 
     expect(eventLog.length).toBe(2);
+  });
+
+  it("passes simulationTime override to event", async () => {
+    const { orchestrator } = setup();
+    const result = await orchestrator.deduce({
+      commandId: asCommandId("cmd-time"),
+      rewrite: chibiRewrites.fine,
+      simulationTime: asSimulationTime("custom-time"),
+    });
+    expect(result.event.simulationTime).toBe("custom-time");
   });
 });

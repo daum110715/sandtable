@@ -1,4 +1,10 @@
-import { NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import {
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { HomePage } from "./pages/HomePage.js";
 import { PlayPage } from "./pages/PlayPage.js";
 
@@ -31,7 +37,12 @@ export function App() {
 
         <nav className="mast__nav" aria-label="主导航">
           {navigationSections.map((s) => (
-            <NavLink key={s.path} to={s.path} end={s.path === "/"} className="mast__link">
+            <NavLink
+              key={s.path}
+              to={s.path}
+              end={s.path === "/"}
+              className="mast__link"
+            >
               {s.label}
             </NavLink>
           ))}
@@ -60,7 +71,12 @@ export function App() {
 
       <nav className="dock" aria-label="移动端导航">
         {navigationSections.map((s) => (
-          <NavLink key={s.path} to={s.path} end={s.path === "/"} className="dock__item">
+          <NavLink
+            key={s.path}
+            to={s.path}
+            end={s.path === "/"}
+            className="dock__item"
+          >
             {s.label}
           </NavLink>
         ))}

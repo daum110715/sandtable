@@ -15,16 +15,23 @@ afterEach(async () => {
   }
 });
 
-const appOpts = { agentMode: "stub" as const, silentLog: true, deduceRateLimit: 0 };
+const appOpts = {
+  agentMode: "stub" as const,
+  silentLog: true,
+  deduceRateLimit: 0,
+};
 
-describe("API M6 hardening", () => {
+describe("API endpoints", () => {
   it("reports health without external services", async () => {
     const app = await buildApp({ ...appOpts });
     apps.push(app);
     const response = await app.inject({ method: "GET", url: "/health" });
     expect(response.statusCode).toBe(200);
     expect(response.headers["x-content-type-options"]).toBe("nosniff");
-    expect(response.json()).toMatchObject({ status: "ok", system: "sandtable" });
+    expect(response.json()).toMatchObject({
+      status: "ok",
+      system: "sandtable",
+    });
   });
 
   it("reports ready when sqlite is available", async () => {
@@ -47,8 +54,16 @@ describe("API M6 hardening", () => {
     const app = await buildApp(appOpts);
     apps.push(app);
     const payload = { commandId: "idem-1", rewriteText: "那天江上刮西北风" };
-    const a = await app.inject({ method: "POST", url: "/api/v1/deduce", payload });
-    const b = await app.inject({ method: "POST", url: "/api/v1/deduce", payload });
+    const a = await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload,
+    });
+    const b = await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload,
+    });
     expect(a.json().outcome).toBe("applied");
     expect(b.json().outcome).toBe("duplicate");
     const events = await app.inject({ method: "GET", url: "/api/v1/events" });
@@ -80,10 +95,14 @@ describe("API M6 hardening", () => {
       apps.push(app);
       const events = await app.inject({ method: "GET", url: "/api/v1/events" });
       expect(events.json().length).toBe(1);
-      const state = await app.inject({ method: "GET", url: "/api/v1/world-state" });
-      expect(state.json().worldState.resources["resource-wind"]?.attributes?.direction).toBe(
-        "西北风",
-      );
+      const state = await app.inject({
+        method: "GET",
+        url: "/api/v1/world-state",
+      });
+      expect(
+        state.json().worldState.resources["resource-wind"]?.attributes
+          ?.direction,
+      ).toBe("西北风");
     }
   });
 
@@ -138,12 +157,22 @@ describe("API M6 hardening", () => {
       rewriteText: "曹操退守许都",
     });
     expect(
-      (await app.inject({ method: "POST", url: "/api/v1/deduce", payload: payload("r1") }))
-        .statusCode,
+      (
+        await app.inject({
+          method: "POST",
+          url: "/api/v1/deduce",
+          payload: payload("r1"),
+        })
+      ).statusCode,
     ).toBe(200);
     expect(
-      (await app.inject({ method: "POST", url: "/api/v1/deduce", payload: payload("r2") }))
-        .statusCode,
+      (
+        await app.inject({
+          method: "POST",
+          url: "/api/v1/deduce",
+          payload: payload("r2"),
+        })
+      ).statusCode,
     ).toBe(200);
     const limited = await app.inject({
       method: "POST",

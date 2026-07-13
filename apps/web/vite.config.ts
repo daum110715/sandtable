@@ -14,9 +14,9 @@ export default defineConfig({
         theme_color: "#f3eee4",
         background_color: "#f3eee4",
         display: "standalone",
-        start_url: "/"
-      }
-    })
+        start_url: "/",
+      },
+    }),
   ],
   server: {
     host: "127.0.0.1",
@@ -24,8 +24,7 @@ export default defineConfig({
     proxy: {
       "/api": { target: "http://127.0.0.1:3000", changeOrigin: true },
       "/health": { target: "http://127.0.0.1:3000", changeOrigin: true },
-      "/ready": { target: "http://127.0.0.1:3000", changeOrigin: true }
-    }
-  }
+      "/ready": { target: "http://127.0.0.1:3000", changeOrigin: true },
+    },
+  },
 });
-

@@ -71,7 +71,10 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** DEV-027：可重试错误最多再试 attempts 次（含首次），同一 commandId 保证幂等。 */
 export const withRetry = async <T>(
   fn: () => Promise<T>,
-  options: { attempts?: number; onRetry?: (err: ApiError, attempt: number) => void } = {},
+  options: {
+    attempts?: number;
+    onRetry?: (err: ApiError, attempt: number) => void;
+  } = {},
 ): Promise<T> => {
   const attempts = options.attempts ?? 2;
   let last: unknown;
@@ -96,7 +99,10 @@ export const deduceStreamOnce = async (
   try {
     const res = await fetch(`${base()}/api/v1/deduce/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
       body: JSON.stringify(input),
     });
 
@@ -130,7 +136,11 @@ export const deduceStreamOnce = async (
         handlers.onResult?.(result);
       } else if (event === "error") {
         const status =
-          data.code === "rate_limited" ? 429 : data.code === "validation_error" ? 400 : 503;
+          data.code === "rate_limited"
+            ? 429
+            : data.code === "validation_error"
+              ? 400
+              : 503;
         streamError = new ApiError(status, data as ApiErrorBody);
         handlers.onError?.(streamError);
       }
@@ -149,7 +159,11 @@ export const deduceStreamOnce = async (
     if (buffer.trim()) handleBlock(buffer);
 
     if (streamError) throw streamError;
-    if (!result) throw new ApiError(502, { error: "SSE ended without result", retryable: true });
+    if (!result)
+      throw new ApiError(502, {
+        error: "SSE ended without result",
+        retryable: true,
+      });
     return result;
   } catch (e) {
     if (e instanceof ApiError) throw e;
@@ -165,7 +179,10 @@ export const deduceStream = async (
   withRetry(() => deduceStreamOnce(input, handlers), {
     attempts: 2,
     onRetry: (_err, attempt) => {
-      handlers.onProgress?.("deducing", `网络或模型繁忙，自动重试（${attempt}）…`);
+      handlers.onProgress?.(
+        "deducing",
+        `网络或模型繁忙，自动重试（${attempt}）…`,
+      );
     },
   });
 

@@ -9,8 +9,21 @@ export interface Scenario {
 export interface WorldState {
   readonly worldlineId: string;
   readonly simulationTime: string;
-  readonly persons: Record<string, { id: string; name: string; role?: string; status?: string; factionId?: string; locationId?: string }>;
-  readonly factions: Record<string, { id: string; name: string; strength?: number }>;
+  readonly persons: Record<
+    string,
+    {
+      id: string;
+      name: string;
+      role?: string;
+      status?: string;
+      factionId?: string;
+      locationId?: string;
+    }
+  >;
+  readonly factions: Record<
+    string,
+    { id: string; name: string; strength?: number }
+  >;
   readonly resources: Record<
     string,
     {
@@ -21,8 +34,14 @@ export interface WorldState {
       attributes?: Record<string, string | number | boolean>;
     }
   >;
-  readonly locations: Record<string, { id: string; name: string; type?: string }>;
-  readonly relations: Record<string, { id: string; type: string; strength?: number }>;
+  readonly locations: Record<
+    string,
+    { id: string; name: string; type?: string }
+  >;
+  readonly relations: Record<
+    string,
+    { id: string; type: string; strength?: number }
+  >;
 }
 
 export interface DeductionEvent {

@@ -45,7 +45,10 @@ export const assertStateChangesConsistent = (
     if (c.op === "create") {
       const value = c.value as { id?: string };
       if (typeof value?.id !== "string" || value.id.length === 0) {
-        throw new AgentError("invalid_output", `create ${c.entity} missing value.id`);
+        throw new AgentError(
+          "invalid_output",
+          `create ${c.entity} missing value.id`,
+        );
       }
       if (set.has(value.id)) {
         throw new AgentError(

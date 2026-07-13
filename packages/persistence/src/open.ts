@@ -21,7 +21,9 @@ export interface SqlitePersistence {
   ping: () => boolean;
 }
 
-export const openSqlitePersistence = (options: OpenSqliteOptions): SqlitePersistence => {
+export const openSqlitePersistence = (
+  options: OpenSqliteOptions,
+): SqlitePersistence => {
   const db = new DatabaseSync(options.path);
   db.exec("PRAGMA foreign_keys = ON;");
   // 文件库启用 WAL 便于崩溃恢复；内存库忽略失败即可
@@ -64,7 +66,8 @@ export const openSqlitePersistence = (options: OpenSqliteOptions): SqlitePersist
     close: () => db.close(),
     ping: () => {
       try {
-        const row = db.prepare("SELECT 1 AS ok").get() as { ok: number } | undefined;
+        const row = db.prepare("SELECT 1 AS ok").get() as
+          { ok: number } | undefined;
         return row?.ok === 1;
       } catch {
         return false;

@@ -71,9 +71,9 @@ describe("ModelActorAgent / ModelRecorderAgent", () => {
     });
 
     expect(result.outcome).toBe("applied");
-    expect(store.getResource(asResourceId("resource-wind"))?.attributes?.direction).toBe(
-      "西北风",
-    );
+    expect(
+      store.getResource(asResourceId("resource-wind"))?.attributes?.direction,
+    ).toBe("西北风");
     expect(eventLog.length).toBe(1);
     expect(llm.complete).toHaveBeenCalledTimes(2);
   });
@@ -155,7 +155,7 @@ describe("resolveAgents", () => {
   it("uses model when llm injected", () => {
     const r = resolveAgents({
       env: {},
-      llm: mockLlm(["{}"]) ,
+      llm: mockLlm(["{}"]),
     });
     expect(r.mode).toBe("model");
     expect(r.provider).toBe("mock");

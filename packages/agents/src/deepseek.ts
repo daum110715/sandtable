@@ -1,7 +1,11 @@
 // DeepSeek OpenAI 兼容客户端（D014）。仅服务端使用密钥。
 
 import { AgentError } from "./errors.js";
-import type { LlmClient, LlmCompleteRequest, LlmCompleteResult } from "./llm.js";
+import type {
+  LlmClient,
+  LlmCompleteRequest,
+  LlmCompleteResult,
+} from "./llm.js";
 
 export interface DeepSeekClientOptions {
   readonly apiKey: string;
@@ -42,7 +46,10 @@ export class DeepSeekClient implements LlmClient {
     try {
       const body: Record<string, unknown> = {
         model: this.model,
-        messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
+        messages: req.messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
       };
       if (req.json) {
         body.response_format = { type: "json_object" };
@@ -74,23 +81,35 @@ export class DeepSeekClient implements LlmClient {
       };
       const text = data.choices?.[0]?.message?.content;
       if (typeof text !== "string" || text.length === 0) {
-        throw new AgentError("invalid_output", "DeepSeek returned empty content", {
-          retryable: true,
-        });
+        throw new AgentError(
+          "invalid_output",
+          "DeepSeek returned empty content",
+          {
+            retryable: true,
+          },
+        );
       }
       return { text, model: data.model ?? this.model };
     } catch (e) {
       if (e instanceof AgentError) throw e;
       if (e instanceof Error && e.name === "AbortError") {
-        throw new AgentError("timeout", `DeepSeek timed out after ${timeoutMs}ms`, {
+        throw new AgentError(
+          "timeout",
+          `DeepSeek timed out after ${timeoutMs}ms`,
+          {
+            retryable: true,
+            cause: e,
+          },
+        );
+      }
+      throw new AgentError(
+        "network",
+        e instanceof Error ? e.message : "DeepSeek request failed",
+        {
           retryable: true,
           cause: e,
-        });
-      }
-      throw new AgentError("network", e instanceof Error ? e.message : "DeepSeek request failed", {
-        retryable: true,
-        cause: e,
-      });
+        },
+      );
     } finally {
       clearTimeout(timer);
     }
@@ -105,7 +124,9 @@ export const createDeepSeekClientFromEnv = (
   if (!apiKey) return undefined;
   return new DeepSeekClient({
     apiKey,
-    ...(env.DEEPSEEK_BASE_URL !== undefined ? { baseUrl: env.DEEPSEEK_BASE_URL } : {}),
+    ...(env.DEEPSEEK_BASE_URL !== undefined
+      ? { baseUrl: env.DEEPSEEK_BASE_URL }
+      : {}),
     ...(env.DEEPSEEK_MODEL !== undefined ? { model: env.DEEPSEEK_MODEL } : {}),
     ...(env.SANDTABLE_LLM_TIMEOUT_MS !== undefined
       ? { defaultTimeoutMs: Number(env.SANDTABLE_LLM_TIMEOUT_MS) }

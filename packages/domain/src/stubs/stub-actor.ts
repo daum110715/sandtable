@@ -19,8 +19,16 @@ export class StubActorAgent implements ActorAgent {
           actorAgentId: this.id,
         },
         intendedChanges: [
-          { description: "风向由东南风转为西北风", entity: "resource", targetId: "resource-wind" },
-          { description: "吴军水寨受损", entity: "resource", targetId: "resource-sun-fleet" },
+          {
+            description: "风向由东南风转为西北风",
+            entity: "resource",
+            targetId: "resource-wind",
+          },
+          {
+            description: "吴军水寨受损",
+            entity: "resource",
+            targetId: "resource-sun-fleet",
+          },
         ],
       };
     }
@@ -32,7 +40,11 @@ export class StubActorAgent implements ActorAgent {
           actorAgentId: this.id,
         },
         intendedChanges: [
-          { description: "曹操撤离乌林，退守许昌", entity: "person", targetId: "person-caocao" },
+          {
+            description: "曹操撤离乌林，退守许昌",
+            entity: "person",
+            targetId: "person-caocao",
+          },
         ],
       };
     }

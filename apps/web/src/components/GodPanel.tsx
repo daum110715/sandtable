@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import type { WorldState } from "../api/types.js";
 
-const entries = <T,>(rec: Record<string, T>): Array<[string, T]> => Object.entries(rec);
+const entries = <T,>(rec: Record<string, T>): Array<[string, T]> =>
+  Object.entries(rec);
 
 function Block({
   title,
@@ -60,7 +61,9 @@ export function GodPanel({ worldState }: { worldState: WorldState | null }) {
             <li key={id} className="row">
               <span className="row__name">{f.name}</span>
               <span className="row__val mono">
-                {f.strength !== undefined ? f.strength.toLocaleString("zh-CN") : "—"}
+                {f.strength !== undefined
+                  ? f.strength.toLocaleString("zh-CN")
+                  : "—"}
               </span>
               {f.strength !== undefined ? (
                 <span className="meter" aria-hidden>
@@ -77,7 +80,9 @@ export function GodPanel({ worldState }: { worldState: WorldState | null }) {
           {persons.map(([id, p]) => (
             <li key={id} className="row row--stack">
               <span className="row__name">{p.name}</span>
-              <span className="row__sub">{[p.role, p.status].filter(Boolean).join(" · ") || "—"}</span>
+              <span className="row__sub">
+                {[p.role, p.status].filter(Boolean).join(" · ") || "—"}
+              </span>
             </li>
           ))}
         </ul>

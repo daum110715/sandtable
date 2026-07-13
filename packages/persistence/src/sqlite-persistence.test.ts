@@ -35,7 +35,10 @@ const tempDbPath = (): string => {
 
 describe("SqlitePersistence", () => {
   it("seeds world state and supports entity getters", () => {
-    const p = openSqlitePersistence({ path: ":memory:", initialState: chibiInitialState });
+    const p = openSqlitePersistence({
+      path: ":memory:",
+      initialState: chibiInitialState,
+    });
     expect(p.store.getState().worldlineId).toBe(chibiInitialState.worldlineId);
     expect(p.store.getPerson(asPersonId("person-caocao"))?.name).toBe("曹操");
     expect(p.ping()).toBe(true);
@@ -43,7 +46,10 @@ describe("SqlitePersistence", () => {
   });
 
   it("runs orchestrator with transaction and idempotent commandId", async () => {
-    const p = openSqlitePersistence({ path: ":memory:", initialState: chibiInitialState });
+    const p = openSqlitePersistence({
+      path: ":memory:",
+      initialState: chibiInitialState,
+    });
     let seq = 0;
     const orch = new DeductionOrchestrator({
       store: p.store,
@@ -64,9 +70,9 @@ describe("SqlitePersistence", () => {
     });
     expect(first.outcome).toBe("applied");
     expect(p.eventLog.length).toBe(1);
-    expect(p.store.getResource(asResourceId("resource-wind"))?.attributes?.direction).toBe(
-      "西北风",
-    );
+    expect(
+      p.store.getResource(asResourceId("resource-wind"))?.attributes?.direction,
+    ).toBe("西北风");
 
     const dup = await orch.deduce({
       commandId: asCommandId("cmd-1"),
@@ -76,7 +82,10 @@ describe("SqlitePersistence", () => {
     expect(p.eventLog.length).toBe(1);
 
     assertCausalChain(p.eventLog.all());
-    assertDeepEqual(replay(chibiInitialState, p.eventLog.all()), p.store.getState());
+    assertDeepEqual(
+      replay(chibiInitialState, p.eventLog.all()),
+      p.store.getState(),
+    );
     p.close();
   });
 
@@ -84,7 +93,10 @@ describe("SqlitePersistence", () => {
     const path = tempDbPath();
 
     {
-      const p = openSqlitePersistence({ path, initialState: chibiInitialState });
+      const p = openSqlitePersistence({
+        path,
+        initialState: chibiInitialState,
+      });
       const orch = new DeductionOrchestrator({
         store: p.store,
         eventLog: p.eventLog,
@@ -102,13 +114,22 @@ describe("SqlitePersistence", () => {
     }
 
     {
-      const p = openSqlitePersistence({ path, initialState: chibiInitialState });
+      const p = openSqlitePersistence({
+        path,
+        initialState: chibiInitialState,
+      });
       expect(p.eventLog.length).toBe(1);
-      expect(p.eventLog.findByCommandId(asCommandId("cmd-restart"))?.id).toBe("e-restart-1");
-      expect(p.store.getResource(asResourceId("resource-wind"))?.attributes?.direction).toBe(
-        "西北风",
+      expect(p.eventLog.findByCommandId(asCommandId("cmd-restart"))?.id).toBe(
+        "e-restart-1",
       );
-      assertDeepEqual(replay(chibiInitialState, p.eventLog.all()), p.store.getState());
+      expect(
+        p.store.getResource(asResourceId("resource-wind"))?.attributes
+          ?.direction,
+      ).toBe("西北风");
+      assertDeepEqual(
+        replay(chibiInitialState, p.eventLog.all()),
+        p.store.getState(),
+      );
 
       // 重复投递不推进
       const orch = new DeductionOrchestrator({
@@ -130,7 +151,10 @@ describe("SqlitePersistence", () => {
   });
 
   it("rolls back both state and event if append fails inside transaction", () => {
-    const p = openSqlitePersistence({ path: ":memory:", initialState: chibiInitialState });
+    const p = openSqlitePersistence({
+      path: ":memory:",
+      initialState: chibiInitialState,
+    });
     const before = p.store.getState();
 
     expect(() =>

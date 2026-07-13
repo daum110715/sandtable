@@ -3,7 +3,9 @@ import { systemIdentity } from "./index.js";
 
 describe("shared domain protocol", () => {
   it("has a stable initial protocol identity", () => {
-    expect(systemIdentity).toEqual({ name: "sandtable", protocolVersion: "v1" });
+    expect(systemIdentity).toEqual({
+      name: "sandtable",
+      protocolVersion: "v1",
+    });
   });
 });
-

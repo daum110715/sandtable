@@ -9,6 +9,10 @@ export interface WorkerStatus {
   readonly protocolVersion: typeof systemIdentity.protocolVersion;
 }
 
+// 结构化错误
+export type { DomainErrorCode } from "./errors.js";
+export { DomainError, isDomainError } from "./errors.js";
+
 // 品牌化标识类型与构造助手
 export type {
   WorldlineId,
@@ -83,19 +87,37 @@ export {
   assertDeepEqual,
 } from "./invariants.js";
 
-// 状态应用内核（M1 闭环 helper；M2 Store/Orchestrator 复用）
-export type { BuildEventArgs } from "./m1-loop.js";
-export { applyStateChange, applyStateChanges, appendEvent, replay, buildEvent } from "./m1-loop.js";
+// 状态应用内核（StateChange 应用、事件日志追加、按序回溯）
+export type { BuildEventArgs } from "./state-core.js";
+export {
+  applyStateChange,
+  applyStateChanges,
+  appendEvent,
+  replay,
+  buildEvent,
+} from "./state-core.js";
 
 // 世界状态数据库 / 事件日志端口 + 内存实现 / 推演编排
 export type { WorldStateStore } from "./world-state-store.js";
 export { InMemoryWorldStateStore } from "./world-state-store.js";
 export type { EventLog } from "./event-log.js";
 export { InMemoryEventLog } from "./event-log.js";
-export type { DeduceCommand, DeduceResult, DeductionOrchestratorOptions } from "./orchestrator.js";
+export type {
+  DeduceCommand,
+  DeduceResult,
+  DeductionOrchestratorOptions,
+} from "./orchestrator.js";
 export { DeductionOrchestrator } from "./orchestrator.js";
 
 // DEV-005 场景与内存桩
-export { chibiInitialState, chibiRewrites, chibiWorldlineId, chibiInitialTime } from "./scenarios/chibi.js";
+export {
+  chibiInitialState,
+  chibiRewrites,
+  chibiWorldlineId,
+  chibiInitialTime,
+} from "./scenarios/chibi.js";
 export { StubActorAgent, stubActorAgentId } from "./stubs/stub-actor.js";
-export { StubRecorderAgent, stubRecorderAgentId } from "./stubs/stub-recorder.js";
+export {
+  StubRecorderAgent,
+  stubRecorderAgentId,
+} from "./stubs/stub-recorder.js";

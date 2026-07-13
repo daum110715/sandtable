@@ -1,20 +1,21 @@
 import type { DatabaseSync, StatementSync } from "node:sqlite";
-import type {
-  FactionId,
-  LocationId,
-  PersonId,
-  RelationId,
-  ResourceId,
-  WorldState,
-  WorldStateStore,
-  StateChange,
-  Faction,
-  Location,
-  Person,
-  Relation,
-  Resource,
+import {
+  DomainError,
+  applyStateChanges,
+  type FactionId,
+  type LocationId,
+  type PersonId,
+  type RelationId,
+  type ResourceId,
+  type WorldState,
+  type WorldStateStore,
+  type StateChange,
+  type Faction,
+  type Location,
+  type Person,
+  type Relation,
+  type Resource,
 } from "@sandtable/domain";
-import { applyStateChanges } from "@sandtable/domain";
 
 /**
  * SQLite 世界状态数据库。读写均以 DB 为准，避免事务回滚后内存缓存脏读。
@@ -31,7 +32,9 @@ export class SqliteWorldStateStore implements WorldStateStore {
     this.#getByWorldlineStmt = db.prepare(
       "SELECT payload FROM world_states WHERE worldline_id = ? LIMIT 1",
     );
-    this.#getAnyStmt = db.prepare("SELECT worldline_id, payload FROM world_states LIMIT 1");
+    this.#getAnyStmt = db.prepare(
+      "SELECT worldline_id, payload FROM world_states LIMIT 1",
+    );
     this.#upsertStmt = db.prepare(`
       INSERT INTO world_states (worldline_id, simulation_time, payload, updated_at)
       VALUES (?, ?, ?, ?)
@@ -42,9 +45,9 @@ export class SqliteWorldStateStore implements WorldStateStore {
     `);
 
     if (initialIfEmpty !== undefined) {
-      const existing = this.#getByWorldlineStmt.get(initialIfEmpty.worldlineId) as
-        | { payload: string }
-        | undefined;
+      const existing = this.#getByWorldlineStmt.get(
+        initialIfEmpty.worldlineId,
+      ) as { payload: string } | undefined;
       if (existing === undefined) {
         this.replace(initialIfEmpty);
       }
@@ -55,15 +58,18 @@ export class SqliteWorldStateStore implements WorldStateStore {
   #load(): WorldState {
     if (this.#worldlineId !== undefined) {
       const row = this.#getByWorldlineStmt.get(this.#worldlineId) as
-        | { payload: string }
-        | undefined;
+        { payload: string } | undefined;
       if (row !== undefined) {
         return JSON.parse(row.payload) as WorldState;
       }
     }
-    const any = this.#getAnyStmt.get() as { worldline_id: string; payload: string } | undefined;
+    const any = this.#getAnyStmt.get() as
+      { worldline_id: string; payload: string } | undefined;
     if (any === undefined) {
-      throw new Error("world state store is empty; seed with initial WorldState");
+      throw new DomainError(
+        "invalid_state",
+        "world state store is empty; seed with initial WorldState",
+      );
     }
     this.#worldlineId = any.worldline_id;
     return JSON.parse(any.payload) as WorldState;

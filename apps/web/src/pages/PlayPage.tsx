@@ -27,7 +27,11 @@ type ChatItem =
 
 type SideTab = "world" | "events";
 
-const SUGGESTIONS = ["那天江上刮西北风", "曹操退守许都", "孙刘同盟破裂"] as const;
+const SUGGESTIONS = [
+  "那天江上刮西北风",
+  "曹操退守许都",
+  "孙刘同盟破裂",
+] as const;
 
 export function PlayPage() {
   const session = loadClientSession();
@@ -53,7 +57,11 @@ export function PlayPage() {
         text: e.rewrite.text,
         commandId: e.commandId ?? e.id,
       });
-      restored.push({ kind: "narrative", text: e.narrative.text, outcome: "applied" });
+      restored.push({
+        kind: "narrative",
+        text: e.narrative.text,
+        outcome: "applied",
+      });
     }
     setChat(restored);
   }, []);
@@ -98,12 +106,19 @@ export function PlayPage() {
       });
       setChat((c) => [
         ...c,
-        { kind: "narrative", text: result.event.narrative.text, outcome: result.outcome },
+        {
+          kind: "narrative",
+          text: result.event.narrative.text,
+          outcome: result.outcome,
+        },
       ]);
       if (result.outcome === "duplicate") {
         setChat((c) => [
           ...c,
-          { kind: "system", text: "重复提交：已返回既有事件，未再次推进世界。" },
+          {
+            kind: "system",
+            text: "重复提交：已返回既有事件，未再次推进世界。",
+          },
         ]);
       }
       pendingCommandId.current = null;
@@ -134,7 +149,8 @@ export function PlayPage() {
     }
   };
 
-  const scenarioLabel = session?.scenarioId === "custom" ? "自定义背景" : "赤壁之战";
+  const scenarioLabel =
+    session?.scenarioId === "custom" ? "自定义背景" : "赤壁之战";
 
   const renderThread = (): ReactNode[] => {
     const nodes: ReactNode[] = [];
@@ -245,11 +261,17 @@ export function PlayPage() {
               <h2>写下第一笔改写</h2>
               <p>
                 任意颗粒度均可——一句风向、一条盟约、一次退兵。
-                <kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>Enter</kbd> 提交后，推演写入事件日志与世界状态。
+                <kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>Enter</kbd>{" "}
+                提交后，推演写入事件日志与世界状态。
               </p>
               <div className="seeds">
                 {SUGGESTIONS.map((s) => (
-                  <button key={s} type="button" className="seed" onClick={() => setInput(s)}>
+                  <button
+                    key={s}
+                    type="button"
+                    className="seed"
+                    onClick={() => setInput(s)}
+                  >
                     <span className="seed__mark" aria-hidden>
                       改
                     </span>
@@ -328,11 +350,17 @@ export function PlayPage() {
             onClick={() => setSideTab("events")}
           >
             事件日志
-            {events.length > 0 ? <span className="tabs__n mono">{events.length}</span> : null}
+            {events.length > 0 ? (
+              <span className="tabs__n mono">{events.length}</span>
+            ) : null}
           </button>
         </div>
         <div className="stage__panel">
-          {sideTab === "world" ? <GodPanel worldState={worldState} /> : <EventLog events={events} />}
+          {sideTab === "world" ? (
+            <GodPanel worldState={worldState} />
+          ) : (
+            <EventLog events={events} />
+          )}
         </div>
       </aside>
     </div>

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { asEventId, asWorldlineId, asSimulationTime, asPersonId } from "./ids.js";
+import {
+  asEventId,
+  asWorldlineId,
+  asSimulationTime,
+  asPersonId,
+} from "./ids.js";
 import type { StateChange, DeductionEvent } from "./events.js";
 
 describe("event log schema", () => {
