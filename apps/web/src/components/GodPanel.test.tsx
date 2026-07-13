@@ -11,6 +11,7 @@ afterEach(() => {
 
 const emptyWorldState: WorldState = {
   worldlineId: "w1",
+  setting: { title: "测试世界", description: "用于面板测试" },
   simulationTime: "t0",
   persons: {},
   factions: {},
@@ -21,6 +22,7 @@ const emptyWorldState: WorldState = {
 
 const fullWorldState: WorldState = {
   worldlineId: "w1",
+  setting: { title: "测试世界", description: "用于面板测试" },
   simulationTime: "建安十三年冬",
   persons: {
     p1: { id: "p1", name: "周瑜", role: "都督", status: "在世" },
