@@ -9,7 +9,9 @@ export function EventLog({ events }: { events: readonly DeductionEvent[] }) {
       </header>
 
       {events.length === 0 ? (
-        <p className="elog__empty">尚无事件。提交改写后，改写与推演结果将按序归档于此。</p>
+        <p className="elog__empty">
+          尚无事件。提交改写后，改写与推演结果将按序归档于此。
+        </p>
       ) : (
         <ol className="elog__list">
           {events.map((ev, i) => (

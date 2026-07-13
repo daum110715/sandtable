@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { asWorldlineId, asSimulationTime, asPersonId, asFactionId } from "./ids.js";
+import {
+  asWorldlineId,
+  asSimulationTime,
+  asPersonId,
+  asFactionId,
+} from "./ids.js";
 import type { WorldState } from "./world-state.js";
 
 describe("WorldState schema", () => {

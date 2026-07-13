@@ -4,7 +4,12 @@ import { asEventId, asResourceId } from "./ids.js";
 import { chibiInitialState, chibiRewrites } from "./scenarios/chibi.js";
 import { StubActorAgent } from "./stubs/stub-actor.js";
 import { StubRecorderAgent } from "./stubs/stub-recorder.js";
-import { applyStateChanges, appendEvent, replay, buildEvent } from "./m1-loop.js";
+import {
+  applyStateChanges,
+  appendEvent,
+  replay,
+  buildEvent,
+} from "./state-core.js";
 import {
   assertActorOutputIsStateless,
   assertAppendOnly,
@@ -13,7 +18,7 @@ import {
   assertDeepEqual,
 } from "./invariants.js";
 
-describe("M1 closed loop: rewrite -> deduce -> record -> write -> replay", () => {
+describe("domain closed loop: rewrite -> deduce -> record -> write -> replay", () => {
   it("runs one deduction cycle over chibi with northwest wind", async () => {
     const actor = new StubActorAgent();
     const recorder = new StubRecorderAgent();
@@ -22,7 +27,10 @@ describe("M1 closed loop: rewrite -> deduce -> record -> write -> replay", () =>
     let log: readonly DeductionEvent[] = [];
 
     // 不变量 1：演员 Agent 输出无写世界状态能力
-    const actorOutput = await actor.deduce({ worldState: state, rewrite: chibiRewrites.fine });
+    const actorOutput = await actor.deduce({
+      worldState: state,
+      rewrite: chibiRewrites.fine,
+    });
     assertActorOutputIsStateless(actorOutput);
 
     // 不变量 3：StateChange 只来自记录员
@@ -36,10 +44,13 @@ describe("M1 closed loop: rewrite -> deduce -> record -> write -> replay", () =>
 
     // 写回世界状态
     state = applyStateChanges(state, recorderOutput.stateChanges);
-    expect(state.resources[asResourceId("resource-wind")]?.attributes?.direction).toBe("西北风");
+    expect(
+      state.resources[asResourceId("resource-wind")]?.attributes?.direction,
+    ).toBe("西北风");
 
     // 追加事件（不变量 2：仅追加）
-    const previousEventId = log.length > 0 ? log[log.length - 1]?.id : undefined;
+    const previousEventId =
+      log.length > 0 ? log[log.length - 1]?.id : undefined;
     const event = buildEvent({
       id: asEventId("e1"),
       worldlineId: state.worldlineId,
@@ -59,7 +70,9 @@ describe("M1 closed loop: rewrite -> deduce -> record -> write -> replay", () =>
     // 不变量 6：replay 还原与逐步写回一致
     const replayed = replay(chibiInitialState, log);
     assertDeepEqual(replayed, state);
-    expect(replayed.resources[asResourceId("resource-wind")]?.attributes?.direction).toBe("西北风");
+    expect(
+      replayed.resources[asResourceId("resource-wind")]?.attributes?.direction,
+    ).toBe("西北风");
   });
 
   it("runs two cycles keeping causal chain and replay consistent", async () => {
@@ -69,7 +82,10 @@ describe("M1 closed loop: rewrite -> deduce -> record -> write -> replay", () =>
     let log: readonly DeductionEvent[] = [];
 
     for (let i = 0; i < 2; i++) {
-      const actorOutput = await actor.deduce({ worldState: state, rewrite: chibiRewrites.fine });
+      const actorOutput = await actor.deduce({
+        worldState: state,
+        rewrite: chibiRewrites.fine,
+      });
       const recorderOutput = await recorder.record({
         worldState: state,
         rewrite: chibiRewrites.fine,
@@ -77,7 +93,8 @@ describe("M1 closed loop: rewrite -> deduce -> record -> write -> replay", () =>
         simulationTime: state.simulationTime,
       });
       state = applyStateChanges(state, recorderOutput.stateChanges);
-      const previousEventId = log.length > 0 ? log[log.length - 1]?.id : undefined;
+      const previousEventId =
+        log.length > 0 ? log[log.length - 1]?.id : undefined;
       log = appendEvent(
         log,
         buildEvent({

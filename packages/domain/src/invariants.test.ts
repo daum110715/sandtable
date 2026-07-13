@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { asEventId, asWorldlineId, asSimulationTime, asPersonId } from "./ids.js";
+import { DomainError } from "./errors.js";
+import {
+  asEventId,
+  asWorldlineId,
+  asSimulationTime,
+  asPersonId,
+} from "./ids.js";
 import type { ActorOutput } from "./agents.js";
 import type { DeductionEvent, StateChange } from "./events.js";
 import {
@@ -25,24 +31,33 @@ const ev = (id: string, prev?: string): DeductionEvent => ({
   rewrite,
   narrative: { text: "n" },
   stateChanges: [],
-  causal: prev !== undefined ? { previousEventId: asEventId(prev), rewrite } : { rewrite },
+  causal:
+    prev !== undefined
+      ? { previousEventId: asEventId(prev), rewrite }
+      : { rewrite },
 });
 
 describe("invariants", () => {
   it("accepts stateless actor output", () => {
-    expect(() => assertActorOutputIsStateless(out([{ description: "d" }]))).not.toThrow();
+    expect(() =>
+      assertActorOutputIsStateless(out([{ description: "d" }])),
+    ).not.toThrow();
   });
 
   it("rejects actor output carrying op/value", () => {
-    expect(() => assertActorOutputIsStateless(out([{ description: "d", op: "create" }]))).toThrow();
-    expect(() => assertActorOutputIsStateless(out([{ description: "d", value: 1 }]))).toThrow();
+    expect(() =>
+      assertActorOutputIsStateless(out([{ description: "d", op: "create" }])),
+    ).toThrow(DomainError);
+    expect(() =>
+      assertActorOutputIsStateless(out([{ description: "d", value: 1 }])),
+    ).toThrow(DomainError);
   });
 
   it("append-only allows growth, forbids mutation and shrink", () => {
     const e1 = ev("e1");
     const e2 = ev("e2", "e1");
     expect(() => assertAppendOnly([e1], [e1, e2])).not.toThrow();
-    expect(() => assertAppendOnly([e1], [e2])).toThrow();
+    expect(() => assertAppendOnly([e1], [e2])).toThrow(DomainError);
   });
 
   it("validates state changes", () => {
@@ -53,17 +68,19 @@ describe("invariants", () => {
     };
     expect(() => assertStateChangesAreValid([valid])).not.toThrow();
     const bad = { op: "create", entity: "person" } as unknown as StateChange;
-    expect(() => assertStateChangesAreValid([bad])).toThrow();
+    expect(() => assertStateChangesAreValid([bad])).toThrow(DomainError);
   });
 
   it("checks causal chain", () => {
     expect(() => assertCausalChain([ev("e1"), ev("e2", "e1")])).not.toThrow();
-    expect(() => assertCausalChain([ev("e1"), ev("e2", "e9")])).toThrow();
-    expect(() => assertCausalChain([ev("e1", "e0")])).toThrow();
+    expect(() => assertCausalChain([ev("e1"), ev("e2", "e9")])).toThrow(
+      DomainError,
+    );
+    expect(() => assertCausalChain([ev("e1", "e0")])).toThrow(DomainError);
   });
 
   it("compares snapshots", () => {
     expect(() => assertDeepEqual({ a: 1 }, { a: 1 })).not.toThrow();
-    expect(() => assertDeepEqual({ a: 1 }, { a: 2 })).toThrow();
+    expect(() => assertDeepEqual({ a: 1 }, { a: 2 })).toThrow(DomainError);
   });
 });

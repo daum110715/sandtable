@@ -3,6 +3,7 @@
 
 import type { ActorOutput } from "./agents.js";
 import type { DeductionEvent, StateChange } from "./events.js";
+import { DomainError } from "./errors.js";
 
 /**
  * 不变量 1：ActorOutput 不含 StateChange（演员 Agent 无写世界状态路径）。
@@ -12,7 +13,10 @@ import type { DeductionEvent, StateChange } from "./events.js";
 export const assertActorOutputIsStateless = (output: ActorOutput): void => {
   for (const c of output.intendedChanges) {
     if ("op" in c || "value" in c) {
-      throw new Error("ActorOutput.intendedChanges must not carry StateChange fields (op/value)");
+      throw new DomainError(
+        "invariant_violation",
+        "ActorOutput.intendedChanges must not carry StateChange fields (op/value)",
+      );
     }
   }
 };
@@ -23,23 +27,34 @@ export const assertAppendOnly = (
   after: readonly DeductionEvent[],
 ): void => {
   if (after.length < before.length) {
-    throw new Error("event log shrank: append-only violated");
+    throw new DomainError(
+      "invariant_violation",
+      "event log shrank: append-only violated",
+    );
   }
   for (let i = 0; i < before.length; i++) {
     if (after[i] !== before[i]) {
-      throw new Error(`event log mutated existing entry at index ${i}`);
+      throw new DomainError(
+        "invariant_violation",
+        `event log mutated existing entry at index ${i}`,
+      );
     }
   }
 };
 
 /** 不变量 3：状态变更合法性（闭环中 StateChange 应只来自 RecorderOutput）。 */
-export const assertStateChangesAreValid = (changes: readonly StateChange[]): void => {
+export const assertStateChangesAreValid = (
+  changes: readonly StateChange[],
+): void => {
   for (const c of changes) {
     if (c.op === "create" && c.value === undefined) {
-      throw new Error("create change missing value");
+      throw new DomainError(
+        "invariant_violation",
+        "create change missing value",
+      );
     }
     if ((c.op === "update" || c.op === "delete") && c.id === undefined) {
-      throw new Error(`${c.op} change missing id`);
+      throw new DomainError("invariant_violation", `${c.op} change missing id`);
     }
   }
 };
@@ -50,12 +65,18 @@ export const assertCausalChain = (log: readonly DeductionEvent[]): void => {
     const ev = log[i]!;
     if (i === 0) {
       if (ev.causal.previousEventId !== undefined) {
-        throw new Error("first event must not reference a previous event");
+        throw new DomainError(
+          "invariant_violation",
+          "first event must not reference a previous event",
+        );
       }
     } else {
       const prev = log[i - 1]!;
       if (ev.causal.previousEventId !== prev.id) {
-        throw new Error(`event ${ev.id} causal chain broken`);
+        throw new DomainError(
+          "invariant_violation",
+          `event ${ev.id} causal chain broken`,
+        );
       }
     }
   }
@@ -67,6 +88,6 @@ export const assertCausalChain = (log: readonly DeductionEvent[]): void => {
 /** 不变量 6 辅助：快照深度相等比较（replay 还原校验用）。 */
 export const assertDeepEqual = (a: unknown, b: unknown): void => {
   if (JSON.stringify(a) !== JSON.stringify(b)) {
-    throw new Error("snapshots differ");
+    throw new DomainError("invariant_violation", "snapshots differ");
   }
 };

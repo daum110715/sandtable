@@ -25,7 +25,8 @@
   --state-soft: #dde4d6;
 
   /* Type */
-  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-sans:
+    "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
@@ -99,7 +100,11 @@ body::before {
     linear-gradient(90deg, var(--line) 1px, transparent 1px);
   background-size: 48px 48px;
   background-position: -1px -1px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(
+    ellipse 80% 70% at 50% 30%,
+    #000 20%,
+    transparent 75%
+  );
 }
 
 ::selection {

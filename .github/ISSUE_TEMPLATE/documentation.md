@@ -1,9 +1,9 @@
 ---
 name: 文档问题
 about: 报告文档错误或建议改进
-title: '[Docs] '
+title: "[Docs] "
 labels: documentation, needs-triage
-assignees: ''
+assignees: ""
 ---
 
 ## 文档位置

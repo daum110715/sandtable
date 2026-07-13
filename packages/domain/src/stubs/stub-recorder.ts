@@ -2,7 +2,11 @@
 // 仅用于 M1 验证协议闭环；M4 将由真实模型实现同一 RecorderAgent 接口。
 // 关键：StateChange 只在记录员产出，演员 Agent 无此能力（不变量 1）。
 
-import type { RecorderAgent, RecorderInput, RecorderOutput } from "../agents.js";
+import type {
+  RecorderAgent,
+  RecorderInput,
+  RecorderOutput,
+} from "../agents.js";
 import type { StateChange } from "../events.js";
 import { asAgentId, asLocationId, asPersonId, asResourceId } from "../ids.js";
 

@@ -9,25 +9,24 @@ export const migrate = (db: DatabaseSync): void => {
     );
   `);
 
-  const row = db.prepare("SELECT MAX(version) AS v FROM schema_migrations").get() as
-    | { v: number | null }
-    | undefined;
+  const row = db
+    .prepare("SELECT MAX(version) AS v FROM schema_migrations")
+    .get() as { v: number | null } | undefined;
   const current = row?.v ?? 0;
 
   if (current < 1) {
     db.exec(MIGRATION_SQL_V1);
-    db.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)").run(
-      SCHEMA_VERSION,
-      new Date().toISOString(),
-    );
+    db.prepare(
+      "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)",
+    ).run(SCHEMA_VERSION, new Date().toISOString());
   }
 };
 
 export const schemaVersion = (db: DatabaseSync): number => {
   try {
-    const row = db.prepare("SELECT MAX(version) AS v FROM schema_migrations").get() as
-      | { v: number | null }
-      | undefined;
+    const row = db
+      .prepare("SELECT MAX(version) AS v FROM schema_migrations")
+      .get() as { v: number | null } | undefined;
     return row?.v ?? 0;
   } catch {
     return 0;

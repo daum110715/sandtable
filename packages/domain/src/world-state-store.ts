@@ -17,7 +17,7 @@ import type {
   Resource,
   WorldState,
 } from "./world-state.js";
-import { applyStateChanges } from "./m1-loop.js";
+import { applyStateChanges } from "./state-core.js";
 
 /** 世界状态数据库端口（M2 内存 / M3 SQLite 等实现）。 */
 export interface WorldStateStore {

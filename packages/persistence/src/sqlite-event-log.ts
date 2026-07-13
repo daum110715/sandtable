@@ -1,5 +1,10 @@
 import type { DatabaseSync, StatementSync } from "node:sqlite";
-import type { CommandId, DeductionEvent, EventLog } from "@sandtable/domain";
+import {
+  DomainError,
+  type CommandId,
+  type DeductionEvent,
+  type EventLog,
+} from "@sandtable/domain";
 
 export class SqliteEventLog implements EventLog {
   readonly #db: DatabaseSync;
@@ -28,14 +33,19 @@ export class SqliteEventLog implements EventLog {
     this.#atStmt = db.prepare(
       "SELECT payload FROM events ORDER BY seq ASC LIMIT 1 OFFSET ?",
     );
-    this.#maxSeqStmt = db.prepare("SELECT COALESCE(MAX(seq), 0) AS m FROM events");
+    this.#maxSeqStmt = db.prepare(
+      "SELECT COALESCE(MAX(seq), 0) AS m FROM events",
+    );
   }
 
   append(event: DeductionEvent): void {
     if (event.commandId !== undefined) {
       const existing = this.findByCommandId(event.commandId);
       if (existing !== undefined) {
-        throw new Error(`duplicate commandId in event log: ${event.commandId}`);
+        throw new DomainError(
+          "duplicate",
+          `duplicate commandId in event log: ${event.commandId}`,
+        );
       }
     }
     const maxRow = this.#maxSeqStmt.get() as { m: number };
@@ -58,12 +68,16 @@ export class SqliteEventLog implements EventLog {
   at(index: number): DeductionEvent | undefined {
     if (index < 0) return undefined;
     const row = this.#atStmt.get(index) as { payload: string } | undefined;
-    return row === undefined ? undefined : (JSON.parse(row.payload) as DeductionEvent);
+    return row === undefined
+      ? undefined
+      : (JSON.parse(row.payload) as DeductionEvent);
   }
 
   last(): DeductionEvent | undefined {
     const row = this.#lastStmt.get() as { payload: string } | undefined;
-    return row === undefined ? undefined : (JSON.parse(row.payload) as DeductionEvent);
+    return row === undefined
+      ? undefined
+      : (JSON.parse(row.payload) as DeductionEvent);
   }
 
   get length(): number {
@@ -72,7 +86,10 @@ export class SqliteEventLog implements EventLog {
   }
 
   findByCommandId(commandId: CommandId): DeductionEvent | undefined {
-    const row = this.#byCommandStmt.get(commandId) as { payload: string } | undefined;
-    return row === undefined ? undefined : (JSON.parse(row.payload) as DeductionEvent);
+    const row = this.#byCommandStmt.get(commandId) as
+      { payload: string } | undefined;
+    return row === undefined
+      ? undefined
+      : (JSON.parse(row.payload) as DeductionEvent);
   }
 }

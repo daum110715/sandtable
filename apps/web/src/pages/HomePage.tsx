@@ -16,7 +16,9 @@ export function HomePage() {
     void fetchScenarios()
       .then(setScenarios)
       .catch((e: unknown) =>
-        setError(e instanceof Error ? e.message : "无法加载场景列表（请先启动 API）"),
+        setError(
+          e instanceof Error ? e.message : "无法加载场景列表（请先启动 API）",
+        ),
       );
   }, []);
 
@@ -54,8 +56,8 @@ export function HomePage() {
             一条世界线
           </h1>
           <p className="fork__lede">
-            不是选择题。你用任意颗粒度写下改写；演员 Agent 演绎后果，记录员 Agent
-            写回结构化世界状态。事件日志只追加——因果可回溯。
+            不是选择题。你用任意颗粒度写下改写；演员 Agent 演绎后果，记录员
+            Agent 写回结构化世界状态。事件日志只追加——因果可回溯。
           </p>
           <ul className="fork__axioms" aria-label="产品公理">
             <li>
@@ -72,7 +74,8 @@ export function HomePage() {
             </li>
           </ul>
           <p className="fork__note" role="note">
-            推演内容为假设演绎，不伪装为史实。1.0 聚焦「改写 → 推演 → 状态一致」。
+            推演内容为假设演绎，不伪装为史实。1.0 聚焦「改写 → 推演 →
+            状态一致」。
           </p>
         </section>
 
@@ -82,15 +85,22 @@ export function HomePage() {
               <div className="resume__body">
                 <span className="kicker">未闭合会话</span>
                 <strong>
-                  {existing.scenarioId === "custom" ? "自定义背景" : existing.scenarioId}
+                  {existing.scenarioId === "custom"
+                    ? "自定义背景"
+                    : existing.scenarioId}
                 </strong>
                 {existing.customBackground ? (
-                  <p>{existing.customBackground.slice(0, 72)}
+                  <p>
+                    {existing.customBackground.slice(0, 72)}
                     {existing.customBackground.length > 72 ? "…" : ""}
                   </p>
                 ) : null}
               </div>
-              <button type="button" className="btn btn--line" onClick={() => navigate("/play")}>
+              <button
+                type="button"
+                className="btn btn--line"
+                onClick={() => navigate("/play")}
+              >
                 继续推演
               </button>
             </div>
@@ -105,7 +115,9 @@ export function HomePage() {
           <header className="board-head">
             <h2>场景</h2>
             <span className="mono">
-              {scenarios.length > 0 ? String(scenarios.length).padStart(2, "0") : "—"}
+              {scenarios.length > 0
+                ? String(scenarios.length).padStart(2, "0")
+                : "—"}
             </span>
           </header>
 

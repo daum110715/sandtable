@@ -1,9 +1,9 @@
 ---
 name: Bug 报告
 about: 报告一个 Bug 帮助我们改进
-title: '[Bug] '
+title: "[Bug] "
 labels: bug, needs-triage
-assignees: ''
+assignees: ""
 ---
 
 ## Bug 描述

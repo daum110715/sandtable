@@ -39,13 +39,17 @@ export class ModelActorAgent implements ActorAgent {
 
     const raw = parseJsonObject(result.text);
     if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
-      throw new AgentError("invalid_output", "actor output must be a JSON object");
+      throw new AgentError(
+        "invalid_output",
+        "actor output must be a JSON object",
+      );
     }
     const obj = raw as Record<string, unknown>;
     const narrativeText =
       typeof obj.narrative === "string"
         ? obj.narrative
-        : typeof (obj.narrative as { text?: string } | undefined)?.text === "string"
+        : typeof (obj.narrative as { text?: string } | undefined)?.text ===
+            "string"
           ? (obj.narrative as { text: string }).text
           : undefined;
     if (narrativeText === undefined || narrativeText.length === 0) {
@@ -54,7 +58,10 @@ export class ModelActorAgent implements ActorAgent {
 
     const intendedRaw = obj.intendedChanges;
     if (intendedRaw !== undefined && !Array.isArray(intendedRaw)) {
-      throw new AgentError("invalid_output", "intendedChanges must be an array");
+      throw new AgentError(
+        "invalid_output",
+        "intendedChanges must be an array",
+      );
     }
 
     const intendedChanges: IntendedChange[] = [];
@@ -64,14 +71,20 @@ export class ModelActorAgent implements ActorAgent {
       }
       const row = item as Record<string, unknown>;
       if (typeof row.description !== "string" || row.description.length === 0) {
-        throw new AgentError("invalid_output", "intendedChange.description required");
+        throw new AgentError(
+          "invalid_output",
+          "intendedChange.description required",
+        );
       }
       const change: {
         description: string;
         entity?: EntityKind;
         targetId?: string;
       } = { description: row.description };
-      if (typeof row.entity === "string" && ENTITY_KINDS.has(row.entity as EntityKind)) {
+      if (
+        typeof row.entity === "string" &&
+        ENTITY_KINDS.has(row.entity as EntityKind)
+      ) {
         change.entity = row.entity as EntityKind;
       }
       if (typeof row.targetId === "string") {

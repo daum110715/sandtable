@@ -37,7 +37,12 @@ type EntityValue = Person | Faction | Resource | Location | Relation;
 const brandId = (
   entity: EntityKind,
   id: string,
-): Person["id"] | Faction["id"] | Resource["id"] | Location["id"] | Relation["id"] => {
+):
+  | Person["id"]
+  | Faction["id"]
+  | Resource["id"]
+  | Location["id"]
+  | Relation["id"] => {
   switch (entity) {
     case "person":
       return asPersonId(id);
@@ -68,7 +73,11 @@ const parseStateChange = (raw: unknown): StateChange => {
   const kind = entity as EntityKind;
 
   if (op === "create") {
-    if (o.value === null || typeof o.value !== "object" || Array.isArray(o.value)) {
+    if (
+      o.value === null ||
+      typeof o.value !== "object" ||
+      Array.isArray(o.value)
+    ) {
       throw new AgentError("invalid_output", "create requires value object");
     }
     const value = { ...(o.value as Record<string, unknown>) };
@@ -92,7 +101,11 @@ const parseStateChange = (raw: unknown): StateChange => {
     return { op: "delete", entity: kind, id };
   }
 
-  if (o.patch === null || typeof o.patch !== "object" || Array.isArray(o.patch)) {
+  if (
+    o.patch === null ||
+    typeof o.patch !== "object" ||
+    Array.isArray(o.patch)
+  ) {
     throw new AgentError("invalid_output", "update requires patch object");
   }
   return {
@@ -122,12 +135,17 @@ export class ModelRecorderAgent implements RecorderAgent {
 
     const raw = parseJsonObject(result.text);
     if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
-      throw new AgentError("invalid_output", "recorder output must be a JSON object");
+      throw new AgentError(
+        "invalid_output",
+        "recorder output must be a JSON object",
+      );
     }
     const obj = raw as Record<string, unknown>;
 
     const narrativeText =
-      typeof obj.narrative === "string" ? obj.narrative : input.actorOutput.narrative.text;
+      typeof obj.narrative === "string"
+        ? obj.narrative
+        : input.actorOutput.narrative.text;
 
     if (!Array.isArray(obj.stateChanges)) {
       throw new AgentError("invalid_output", "stateChanges must be an array");
@@ -147,7 +165,10 @@ export class ModelRecorderAgent implements RecorderAgent {
       },
     };
 
-    if (typeof obj.nextSimulationTime === "string" && obj.nextSimulationTime.length > 0) {
+    if (
+      typeof obj.nextSimulationTime === "string" &&
+      obj.nextSimulationTime.length > 0
+    ) {
       return {
         ...base,
         nextSimulationTime: asSimulationTime(obj.nextSimulationTime),

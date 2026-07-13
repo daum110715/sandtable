@@ -32,9 +32,12 @@ export interface ResolvedAgents {
  * - mode=stub 或无密钥：内存桩
  * - mode=model 或存在 DEEPSEEK_API_KEY：DeepSeek 模型 Agent
  */
-export const resolveAgents = (options: ResolveAgentsOptions = {}): ResolvedAgents => {
+export const resolveAgents = (
+  options: ResolveAgentsOptions = {},
+): ResolvedAgents => {
   const env = options.env ?? process.env;
-  const forced = options.mode ?? (env.SANDTABLE_AGENT_MODE as AgentMode | undefined);
+  const forced =
+    options.mode ?? (env.SANDTABLE_AGENT_MODE as AgentMode | undefined);
 
   if (forced === "stub") {
     return {
@@ -44,14 +47,12 @@ export const resolveAgents = (options: ResolveAgentsOptions = {}): ResolvedAgent
     };
   }
 
-  const llm =
-    options.llm ??
-    createDeepSeekClientFromEnv(env) ??
-    (forced === "model"
-      ? (() => {
-          throw new Error("SANDTABLE_AGENT_MODE=model requires DEEPSEEK_API_KEY or llm");
-        })()
-      : undefined);
+  const llm = options.llm ?? createDeepSeekClientFromEnv(env);
+  if (llm === undefined && forced === "model") {
+    throw new Error(
+      "SANDTABLE_AGENT_MODE=model requires DEEPSEEK_API_KEY or llm",
+    );
+  }
 
   if (llm === undefined) {
     return {

@@ -14,6 +14,7 @@
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "test:coverage": "vitest run --coverage",
     "check": "npm run typecheck && npm run test && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

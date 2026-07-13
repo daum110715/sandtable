@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { asAgentId } from "./ids.js";
-import type { ActorOutput, ActorAgent, RecorderAgent, ActorInput } from "./agents.js";
+import type {
+  ActorOutput,
+  ActorAgent,
+  RecorderAgent,
+  ActorInput,
+} from "./agents.js";
 
 const stubInput = (text: string) => ({
   worldState: undefined as never,
@@ -11,7 +16,9 @@ describe("agent protocol", () => {
   it("ActorOutput carries narrative and intentions only", () => {
     const out: ActorOutput = {
       narrative: { text: "n", actorAgentId: asAgentId("a1") },
-      intendedChanges: [{ description: "d", entity: "resource", targetId: "r1" }],
+      intendedChanges: [
+        { description: "d", entity: "resource", targetId: "r1" },
+      ],
     };
     expect(out.intendedChanges[0]?.description).toBe("d");
     // 类型契约：ActorOutput 结构上无 op/value/id 字段（编译期保证演员 Agent 无写状态路径）。
@@ -20,7 +27,10 @@ describe("agent protocol", () => {
   it("an ActorAgent can return synchronous output", async () => {
     const agent: ActorAgent = {
       id: asAgentId("a1"),
-      deduce: (input: ActorInput) => ({ narrative: { text: input.rewrite.text }, intendedChanges: [] }),
+      deduce: (input: ActorInput) => ({
+        narrative: { text: input.rewrite.text },
+        intendedChanges: [],
+      }),
     };
     const out = await agent.deduce(stubInput("x"));
     expect(out.narrative.text).toBe("x");

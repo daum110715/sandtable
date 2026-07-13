@@ -26,4 +26,30 @@ describe("migrate", () => {
     expect(schemaVersion(db)).toBe(SCHEMA_VERSION);
     db.close();
   });
+
+  it("no-ops when already at current version", () => {
+    const db = new DatabaseSync(":memory:");
+    migrate(db);
+    const versionBefore = schemaVersion(db);
+    migrate(db);
+    const versionAfter = schemaVersion(db);
+    expect(versionAfter).toBe(versionBefore);
+    db.close();
+  });
+});
+
+describe("schemaVersion", () => {
+  it("returns 0 for fresh database without migrations", () => {
+    const db = new DatabaseSync(":memory:");
+    expect(schemaVersion(db)).toBe(0);
+    db.close();
+  });
+
+  it("returns 0 on error (no migration table)", () => {
+    const db = new DatabaseSync(":memory:");
+    // Drop the table if it exists to simulate error
+    db.exec("DROP TABLE IF EXISTS schema_migrations");
+    expect(schemaVersion(db)).toBe(0);
+    db.close();
+  });
 });

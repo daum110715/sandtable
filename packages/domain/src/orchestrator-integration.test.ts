@@ -1,5 +1,5 @@
-// M2 正式验收：以 DeductionOrchestrator 为入口的改写-推演-写回-回溯链路。
-// M1 的 m1-integration 保留为协议/内核回归；本文件覆盖事务、幂等与编排语义。
+// 编排验收：以 DeductionOrchestrator 为入口的改写-推演-写回-回溯链路。
+// integration.test.ts 保留为协议/内核回归；本文件覆盖事务、幂等与编排语义。
 
 import { describe, expect, it } from "vitest";
 import { asCommandId, asEventId, asResourceId } from "./ids.js";
@@ -10,7 +10,7 @@ import {
   assertDeepEqual,
   assertStateChangesAreValid,
 } from "./invariants.js";
-import { replay } from "./m1-loop.js";
+import { replay } from "./state-core.js";
 import { DeductionOrchestrator } from "./orchestrator.js";
 import { InMemoryEventLog } from "./event-log.js";
 import { InMemoryWorldStateStore } from "./world-state-store.js";
@@ -18,7 +18,7 @@ import { chibiInitialState, chibiRewrites } from "./scenarios/chibi.js";
 import { StubActorAgent } from "./stubs/stub-actor.js";
 import { StubRecorderAgent } from "./stubs/stub-recorder.js";
 
-describe("M2 closed loop: orchestrator rewrite -> deduce -> write -> replay", () => {
+describe("orchestrator closed loop: rewrite -> deduce -> write -> replay", () => {
   it("satisfies exit criteria: full path, transaction, idempotency, invariants", async () => {
     const store = new InMemoryWorldStateStore(chibiInitialState);
     const eventLog = new InMemoryEventLog();
@@ -58,7 +58,10 @@ describe("M2 closed loop: orchestrator rewrite -> deduce -> write -> replay", ()
     // 第二轮不同 commandId
     const second = await orchestrator.deduce({
       commandId: asCommandId("m2-cmd-2"),
-      rewrite: { text: "曹操退守许都", submittedAt: "2026-07-13T12:01:00.000Z" },
+      rewrite: {
+        text: "曹操退守许都",
+        submittedAt: "2026-07-13T12:01:00.000Z",
+      },
     });
     expect(second.outcome).toBe("applied");
     expect(eventLog.length).toBe(2);
@@ -68,6 +71,8 @@ describe("M2 closed loop: orchestrator rewrite -> deduce -> write -> replay", ()
     // 世界状态权威与 replay 一致
     const replayed = replay(chibiInitialState, eventLog.all());
     assertDeepEqual(replayed, store.getState());
-    expect(store.getResource(asResourceId("resource-wind"))?.attributes?.direction).toBe("西北风");
+    expect(
+      store.getResource(asResourceId("resource-wind"))?.attributes?.direction,
+    ).toBe("西北风");
   });
 });

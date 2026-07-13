@@ -12,7 +12,7 @@
 [![Vitest](https://img.shields.io/badge/Vitest-4.x-6e9f18.svg?logo=vitest)](https://vitest.dev/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-[简体中文](README.md) | [English](README.en.md) | [文档总览](docs/README.md)
+[简体中文](README.md) | [文档总览](docs/README.md)
 
 </div>
 
@@ -104,16 +104,16 @@ flowchart TB
 
 ### 模块
 
-| 模块 | 职责 |
-|:-----|:-----|
-| **场景与入口模块** | 加载预设场景或自定义背景，产出初始世界状态；不预测推演结果 |
-| **对话与推演编排模块** | 接收自由文本改写，协调演员/记录员 Agent 完成推演循环，写入事件日志 |
-| **演员 Agent** | 读取当前世界状态与改写，生成叙事推演 |
-| **记录员 Agent** | 把推演结果拆解为结构化状态变更，写回世界状态数据库，产出事件记录 |
-| **裁判 Agent**（可选/后期） | 检查推演前后矛盾；1.0 默认不启用 |
-| **世界状态数据库** | 结构化持久化人物、势力、资源、地理、关系等要素，唯一权威 |
-| **事件日志** | 每次改写与推演作为独立事件追加，不可原地修改，支持回溯 |
-| **上帝面板** | 常驻展示当前世界结构化状态；1.0 只读 |
+| 模块                        | 职责                                                               |
+| :-------------------------- | :----------------------------------------------------------------- |
+| **场景与入口模块**          | 加载预设场景或自定义背景，产出初始世界状态；不预测推演结果         |
+| **对话与推演编排模块**      | 接收自由文本改写，协调演员/记录员 Agent 完成推演循环，写入事件日志 |
+| **演员 Agent**              | 读取当前世界状态与改写，生成叙事推演                               |
+| **记录员 Agent**            | 把推演结果拆解为结构化状态变更，写回世界状态数据库，产出事件记录   |
+| **裁判 Agent**（可选/后期） | 检查推演前后矛盾；1.0 默认不启用                                   |
+| **世界状态数据库**          | 结构化持久化人物、势力、资源、地理、关系等要素，唯一权威           |
+| **事件日志**                | 每次改写与推演作为独立事件追加，不可原地修改，支持回溯             |
+| **上帝面板**                | 常驻展示当前世界结构化状态；1.0 只读                               |
 
 ### 核心不变量
 
@@ -133,52 +133,52 @@ flowchart TB
 
 ### 核心运行时
 
-| 技术 | 版本 | 用途 |
-|:-----|:-----|:-----|
-| [TypeScript](https://www.typescriptlang.org/) | 7.x | 全栈语言（前端、后端、Worker、共享协议） |
-| [Node.js](https://nodejs.org/) | ≥ 22.19.0 | 服务端运行时 |
+| 技术                                          | 版本      | 用途                                     |
+| :-------------------------------------------- | :-------- | :--------------------------------------- |
+| [TypeScript](https://www.typescriptlang.org/) | 7.x       | 全栈语言（前端、后端、Worker、共享协议） |
+| [Node.js](https://nodejs.org/)                | ≥ 22.19.0 | 服务端运行时                             |
 
 ### 前端（`apps/web`）
 
-| 技术 | 版本 | 用途 |
-|:-----|:-----|:-----|
-| [React](https://react.dev/) | 19.x | UI 框架 |
-| [React Router](https://reactrouter.com/) | 7.x | 客户端路由 |
-| [TanStack Query](https://tanstack.com/query) | 5.x | 服务端状态管理 |
-| [Vite](https://vite.dev/) | 8.x | 构建工具 |
-| [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) | 1.x | PWA 支持 |
+| 技术                                                 | 版本 | 用途           |
+| :--------------------------------------------------- | :--- | :------------- |
+| [React](https://react.dev/)                          | 19.x | UI 框架        |
+| [React Router](https://reactrouter.com/)             | 7.x  | 客户端路由     |
+| [TanStack Query](https://tanstack.com/query)         | 5.x  | 服务端状态管理 |
+| [Vite](https://vite.dev/)                            | 8.x  | 构建工具       |
+| [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) | 1.x  | PWA 支持       |
 
 ### 后端（`apps/api`）
 
-| 技术 | 版本 | 用途 |
-|:-----|:-----|:-----|
-| [Fastify](https://fastify.dev/) | 5.x | HTTP 框架 |
+| 技术                            | 版本 | 用途      |
+| :------------------------------ | :--- | :-------- |
+| [Fastify](https://fastify.dev/) | 5.x  | HTTP 框架 |
 
 ### Worker（`apps/worker`）
 
-| 技术 | 版本 | 用途 |
-|:-----|:-----|:-----|
-| [Pi AI](https://github.com/earendil-works/pi) | 0.80.x | 多模型 AI 层（当前选型，D007 待定） |
-| [Pi Agent Core](https://github.com/earendil-works/pi) | 0.80.x | Agent 循环、工具执行 |
+| 技术                                                  | 版本   | 用途                                |
+| :---------------------------------------------------- | :----- | :---------------------------------- |
+| [Pi AI](https://github.com/earendil-works/pi)         | 0.80.x | 多模型 AI 层（当前选型，D007 待定） |
+| [Pi Agent Core](https://github.com/earendil-works/pi) | 0.80.x | Agent 循环、工具执行                |
 
 ### 开发工具
 
-| 技术 | 版本 | 用途 |
-|:-----|:-----|:-----|
-| [Vitest](https://vitest.dev/) | 4.x | 测试框架 |
-| [Prettier](https://prettier.io/) | 3.x | 代码格式化 |
-| [tsx](https://github.com/privatenumber/tsx) | 4.x | TypeScript 直接执行 |
-| npm workspaces | - | Monorepo 管理 |
+| 技术                                        | 版本 | 用途                |
+| :------------------------------------------ | :--- | :------------------ |
+| [Vitest](https://vitest.dev/)               | 4.x  | 测试框架            |
+| [Prettier](https://prettier.io/)            | 3.x  | 代码格式化          |
+| [tsx](https://github.com/privatenumber/tsx) | 4.x  | TypeScript 直接执行 |
+| npm workspaces                              | -    | Monorepo 管理       |
 
 ### 规划中的基础设施
 
-| 技术 | 用途 |
-|:-----|:-----|
+| 技术                                      | 用途                           |
+| :---------------------------------------- | :----------------------------- |
 | [PostgreSQL](https://www.postgresql.org/) | 世界状态数据库、事件日志、账户 |
-| [Redis](https://redis.io/) | 队列、缓存、限流 |
-| S3 兼容存储 | 附件、导出 |
-| OIDC/OAuth | 身份认证 |
-| OCI 容器 | 部署 |
+| [Redis](https://redis.io/)                | 队列、缓存、限流               |
+| S3 兼容存储                               | 附件、导出                     |
+| OIDC/OAuth                                | 身份认证                       |
+| OCI 容器                                  | 部署                           |
 
 ---
 
@@ -189,8 +189,12 @@ sandtable/
 ├── apps/
 │   ├── web/                    # React + Vite 前端（对话主区 + 上帝面板）
 │   │   ├── src/
-│   │   │   ├── App.tsx         # 路由：世界 · 改写 · 时间线 · 存档
+│   │   │   ├── api/            # API 客户端（SSE 推演流、状态查询）
+│   │   │   ├── components/     # UI 组件（事件日志、上帝面板）
+│   │   │   ├── pages/          # 页面（首页、推演页）
+│   │   │   ├── App.tsx         # 路由
 │   │   │   ├── main.tsx        # React 入口
+│   │   │   ├── session.ts      # 会话与场景元数据
 │   │   │   └── styles.css      # 移动端优先样式
 │   │   ├── index.html
 │   │   ├── package.json
@@ -199,7 +203,10 @@ sandtable/
 │   ├── api/                    # Fastify HTTP API
 │   │   ├── src/
 │   │   │   ├── app.ts          # Fastify 应用工厂
-│   │   │   └── server.ts       # 服务入口
+│   │   │   ├── server.ts       # 服务入口
+│   │   │   ├── log.ts          # 结构化日志
+│   │   │   ├── metrics.ts      # 指标端点
+│   │   │   └── security.ts     # 安全中间件（限流、校验、响应头）
 │   │   └── package.json
 │   │
 │   └── worker/                 # AI 推演与多 Agent 后台 Worker
@@ -210,9 +217,38 @@ sandtable/
 │       └── package.json
 │
 ├── packages/
-│   └── domain/                 # 共享领域协议
+│   ├── domain/                 # 共享领域协议（世界状态、事件日志、Agent 协议）
+│   │   ├── src/
+│   │   │   ├── index.ts        # 统一导出
+│   │   │   ├── ids.ts          # 品牌化 ID 类型
+│   │   │   ├── world-state.ts  # 世界状态 schema
+│   │   │   ├── events.ts       # 事件日志 schema
+│   │   │   ├── agents.ts       # Agent 协议接口
+│   │   │   ├── state-core.ts   # 状态应用内核（变更应用、回溯）
+│   │   │   ├── orchestrator.ts # 推演编排（事务、幂等）
+│   │   │   ├── scenarios/      # 预设场景数据
+│   │   │   └── stubs/          # 桩 Agent（无模型时使用）
+│   │   └── package.json
+│   │
+│   ├── agents/                 # Agent 推演实现（DeepSeek LLM 客户端）
+│   │   ├── src/
+│   │   │   ├── index.ts        # 统一导出
+│   │   │   ├── llm.ts          # LLM 客户端接口
+│   │   │   ├── deepseek.ts     # DeepSeek API 客户端
+│   │   │   ├── model-actor.ts  # 模型演员 Agent
+│   │   │   ├── model-recorder.ts # 模型记录员 Agent
+│   │   │   ├── prompts.ts      # 提示词模板
+│   │   │   └── validate.ts     # 输出校验
+│   │   └── package.json
+│   │
+│   └── persistence/            # SQLite 持久化层
 │       ├── src/
-│       │   └── index.ts        # 系统标识、品牌化 ID 类型
+│       │   ├── index.ts        # 统一导出
+│       │   ├── open.ts         # 数据库连接
+│       │   ├── schema.ts       # DDL 定义
+│       │   ├── migrate.ts      # 迁移
+│       │   ├── sqlite-world-state-store.ts
+│       │   └── sqlite-event-log.ts
 │       └── package.json
 │
 ├── docs/                       # 项目文档
@@ -223,8 +259,10 @@ sandtable/
 │   ├── mvp.md                  # 1.0 范围
 │   ├── roadmap.md              # 路线图
 │   ├── development.md          # 本地开发指南
+│   ├── development-plan.md     # 开发计划
 │   ├── decision-register.md    # 决策清单
 │   ├── adr/                    # 架构决策记录
+│   ├── agents/                 # Agent 协作文档
 │   └── templates/              # 文档模板
 │
 ├── AGENTS.md                   # AI Agent 协作规则
@@ -289,17 +327,17 @@ npm run check
 
 ### 可用脚本
 
-| 命令 | 说明 |
-|:-----|:-----|
-| `npm run dev:web` | 启动前端 PWA 开发服务 |
-| `npm run dev:api` | 启动 API 服务（热重载） |
-| `npm run dev:worker` | 启动 Worker（热重载） |
-| `npm run check` | 完整验证（类型检查 + 测试 + 构建） |
-| `npm run build` | 生产构建所有工作区 |
-| `npm run test` | 运行所有测试 |
-| `npm run typecheck` | 类型检查所有工作区 |
-| `npm run format` | 格式化代码 |
-| `npm run format:check` | 检查代码格式 |
+| 命令                   | 说明                               |
+| :--------------------- | :--------------------------------- |
+| `npm run dev:web`      | 启动前端 PWA 开发服务              |
+| `npm run dev:api`      | 启动 API 服务（热重载）            |
+| `npm run dev:worker`   | 启动 Worker（热重载）              |
+| `npm run check`        | 完整验证（类型检查 + 测试 + 构建） |
+| `npm run build`        | 生产构建所有工作区                 |
+| `npm run test`         | 运行所有测试                       |
+| `npm run typecheck`    | 类型检查所有工作区                 |
+| `npm run format`       | 格式化代码                         |
+| `npm run format:check` | 检查代码格式                       |
 
 ### 代码风格
 
@@ -313,18 +351,18 @@ npm run check
 
 项目使用统一的领域术语，详见 [CONTEXT.md](CONTEXT.md)。在编写代码和文档时，必须使用规范术语：
 
-| ✅ 正确 | ❌ 避免 |
-|:--------|:--------|
-| 场景 | 剧本、存档、历史基线 |
-| 世界状态 | 上下文、记忆、对话历史 |
-| 世界状态数据库 | 上下文窗口、聊天记录 |
-| 事件日志 | 聊天记录、消息流 |
-| 改写者 | 玩家角色、上帝视角 |
-| 改写 | 行动意图、结构化指令、选项 |
-| 推演 | 裁决、规则执行 |
-| 演员 Agent | NPC、行动者 Agent、角色模型 |
-| 记录员 Agent | 状态更新器、投影器 |
-| 上帝面板 | 控制台、调试面板 |
+| ✅ 正确        | ❌ 避免                     |
+| :------------- | :-------------------------- |
+| 场景           | 剧本、存档、历史基线        |
+| 世界状态       | 上下文、记忆、对话历史      |
+| 世界状态数据库 | 上下文窗口、聊天记录        |
+| 事件日志       | 聊天记录、消息流            |
+| 改写者         | 玩家角色、上帝视角          |
+| 改写           | 行动意图、结构化指令、选项  |
+| 推演           | 裁决、规则执行              |
+| 演员 Agent     | NPC、行动者 Agent、角色模型 |
+| 记录员 Agent   | 状态更新器、投影器          |
+| 上帝面板       | 控制台、调试面板            |
 
 ### 环境变量
 
@@ -362,26 +400,26 @@ npm run test --workspace @sandtable/domain
 
 ### 规划中的部署架构
 
-| 组件 | 部署目标 |
-|:-----|:---------|
-| PWA 前端 | CDN + Service Worker |
-| API 服务 | OCI 容器 |
-| Worker | OCI 容器 |
-| PostgreSQL | 托管数据库 |
-| Redis | 托管缓存 |
-| 对象存储 | S3 兼容服务 |
+| 组件       | 部署目标             |
+| :--------- | :------------------- |
+| PWA 前端   | CDN + Service Worker |
+| API 服务   | OCI 容器             |
+| Worker     | OCI 容器             |
+| PostgreSQL | 托管数据库           |
+| Redis      | 托管缓存             |
+| 对象存储   | S3 兼容服务          |
 
 ---
 
 ## 路线图
 
-| 阶段 | 里程碑 | 说明 | 状态 |
-|:-----|:-------|:-----|:-----|
-| **阶段 0** | 方向与文档冻结 | 确认 1.0 方向、重写领域语言与架构文档、标记被取代的 ADR | ✅ 已完成 |
-| **阶段 1** | 技术原型 | Monorepo、前端外壳、API、Worker、共享领域协议；锁定待定技术决策 | 🚧 进行中 |
-| **阶段 2** | 1.0 闭环 | 世界状态数据库、事件日志、演员/记录员 Agent、对话主区 + 上帝面板 | 📋 计划中 |
-| **阶段 3** | 面板与内容扩展 | 上帝面板细化、历史范围扩充、裁判 Agent、史实/推演视觉标识 | 📋 计划中 |
-| **阶段 4** | 权限分层与平台化 | 权限分层、迷雾/代价、显式分支与确定性重放、账户与分享 | 📋 计划中 |
+| 阶段       | 里程碑           | 说明                                                             | 状态      |
+| :--------- | :--------------- | :--------------------------------------------------------------- | :-------- |
+| **阶段 0** | 方向与文档冻结   | 确认 1.0 方向、重写领域语言与架构文档、标记被取代的 ADR          | ✅ 已完成 |
+| **阶段 1** | 技术原型         | Monorepo、前端外壳、API、Worker、共享领域协议；锁定待定技术决策  | 🚧 进行中 |
+| **阶段 2** | 1.0 闭环         | 世界状态数据库、事件日志、演员/记录员 Agent、对话主区 + 上帝面板 | 📋 计划中 |
+| **阶段 3** | 面板与内容扩展   | 上帝面板细化、历史范围扩充、裁判 Agent、史实/推演视觉标识        | 📋 计划中 |
+| **阶段 4** | 权限分层与平台化 | 权限分层、迷雾/代价、显式分支与确定性重放、账户与分享            | 📋 计划中 |
 
 ### 1.0 范围
 

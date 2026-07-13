@@ -8,18 +8,28 @@ describe("chibi scenario", () => {
   });
 
   it("includes key persons", () => {
-    expect(chibiInitialState.persons[asPersonId("person-caocao")]?.name).toBe("曹操");
-    expect(chibiInitialState.persons[asPersonId("person-zhouyu")]?.name).toBe("周瑜");
-    expect(chibiInitialState.persons[asPersonId("person-zhugeliang")]?.name).toBe("诸葛亮");
+    expect(chibiInitialState.persons[asPersonId("person-caocao")]?.name).toBe(
+      "曹操",
+    );
+    expect(chibiInitialState.persons[asPersonId("person-zhouyu")]?.name).toBe(
+      "周瑜",
+    );
+    expect(
+      chibiInitialState.persons[asPersonId("person-zhugeliang")]?.name,
+    ).toBe("诸葛亮");
   });
 
   it("cao fleet is chained at Wulin", () => {
-    const fleet = chibiInitialState.resources[asResourceId("resource-cao-fleet")];
+    const fleet =
+      chibiInitialState.resources[asResourceId("resource-cao-fleet")];
     expect(fleet?.attributes?.chained).toBe(true);
   });
 
   it("wind starts as southeast", () => {
-    expect(chibiInitialState.resources[asResourceId("resource-wind")]?.attributes?.direction).toBe("东南风");
+    expect(
+      chibiInitialState.resources[asResourceId("resource-wind")]?.attributes
+        ?.direction,
+    ).toBe("东南风");
   });
 
   it("has three granularities of rewrites", () => {

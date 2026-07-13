@@ -12,7 +12,10 @@ import {
   type WorldState,
 } from "@sandtable/domain";
 import { isAgentError, resolveAgents } from "@sandtable/agents";
-import { openSqlitePersistence, type SqlitePersistence } from "@sandtable/persistence";
+import {
+  openSqlitePersistence,
+  type SqlitePersistence,
+} from "@sandtable/persistence";
 import { logStructured } from "./log.js";
 import { ApiMetrics } from "./metrics.js";
 import {
@@ -53,7 +56,8 @@ const SCENARIOS = [
     id: "custom",
     title: "自定义背景",
     period: "由你指定",
-    summary: "1.0 最小：以赤壁世界状态模板起步，自定义文字记入会话说明（非独立史料库）。",
+    summary:
+      "1.0 最小：以赤壁世界状态模板起步，自定义文字记入会话说明（非独立史料库）。",
     kind: "custom" as const,
   },
 ] as const;
@@ -85,7 +89,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
           recorder: options.recorder,
         }
       : resolveAgents({
-          ...(options.agentMode !== undefined ? { mode: options.agentMode } : {}),
+          ...(options.agentMode !== undefined
+            ? { mode: options.agentMode }
+            : {}),
         });
 
   let eventSeq = 0;
@@ -103,20 +109,27 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
 
   const metrics = new ApiMetrics();
   const rateLimit = options.deduceRateLimit ?? DEFAULT_DEDUCE_RATE_LIMIT;
-  const rateLimiter = new SlidingWindowRateLimiter(rateLimit === 0 ? 1_000_000 : rateLimit);
+  const rateLimiter = new SlidingWindowRateLimiter(
+    rateLimit === 0 ? 1_000_000 : rateLimit,
+  );
 
   const app = Fastify({
     logger: false,
     bodyLimit: 48 * 1024,
     requestIdHeader: "x-request-id",
-    genReqId: () => `req-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    genReqId: () =>
+      `req-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
   });
 
   await app.register(cors, {
     origin: options.corsOrigin ?? true,
   });
 
-  const log = (level: "info" | "warn" | "error", msg: string, extra?: Record<string, unknown>) => {
+  const log = (
+    level: "info" | "warn" | "error",
+    msg: string,
+    extra?: Record<string, unknown>,
+  ) => {
     if (options.silentLog) return;
     logStructured({ level, msg, ...extra });
   };
@@ -180,23 +193,29 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
     scenarios: SCENARIOS,
   }));
 
-  app.post<{ Body: { scenarioId?: string } }>("/api/v1/session/reset", async (req) => {
-    const scenarioId = req.body?.scenarioId ?? "chibi";
-    void scenarioId;
-    persistence.store.replace(chibiInitialState);
-    persistence.db.exec("DELETE FROM events");
-    log("info", "session_reset", { requestId: req.id, scenarioId });
-    return {
-      ok: true,
-      scenarioId: scenarioId === "custom" ? "custom" : "chibi",
-      worldState: persistence.store.getState(),
-      events: [] as const,
-    };
-  });
+  app.post<{ Body: { scenarioId?: string } }>(
+    "/api/v1/session/reset",
+    async (req) => {
+      const scenarioId = req.body?.scenarioId ?? "chibi";
+      void scenarioId;
+      persistence.store.replace(chibiInitialState);
+      persistence.db.exec("DELETE FROM events");
+      log("info", "session_reset", { requestId: req.id, scenarioId });
+      return {
+        ok: true,
+        scenarioId: scenarioId === "custom" ? "custom" : "chibi",
+        worldState: persistence.store.getState(),
+        events: [] as const,
+      };
+    },
+  );
 
-  app.get("/api/v1/world-state", async (): Promise<{ worldState: WorldState }> => ({
-    worldState: persistence.store.getState(),
-  }));
+  app.get(
+    "/api/v1/world-state",
+    async (): Promise<{ worldState: WorldState }> => ({
+      worldState: persistence.store.getState(),
+    }),
+  );
 
   app.get("/api/v1/events", async () => ({
     events: persistence.eventLog.all(),
@@ -205,11 +224,13 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
 
   const enforceRateLimit = (
     req: FastifyRequest,
-  ): { ok: true } | { ok: false; status: 429; payload: Record<string, unknown> } => {
+  ):
+    | { ok: true }
+    | { ok: false; status: 429; payload: Record<string, unknown> } => {
     if (rateLimit === 0) return { ok: true };
     const rl = rateLimiter.check(clientKey(req));
     if (!rl.allowed) {
-      metrics.deduceRateLimited += 1;
+      metrics.increment("deduceRateLimited");
       return {
         ok: false,
         status: 429,
@@ -231,12 +252,16 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
     | { ok: true; result: DeduceResult }
     | { ok: false; status: number; payload: Record<string, unknown> }
   > => {
-    metrics.deduceTotal += 1;
+    metrics.increment("deduceTotal");
 
     const validated = validateDeduceBody(body ?? {});
     if (!validated.ok) {
-      metrics.deduceValidationError += 1;
-      return { ok: false, status: validated.status, payload: validated.payload };
+      metrics.increment("deduceValidationError");
+      return {
+        ok: false,
+        status: validated.status,
+        payload: validated.payload,
+      };
     }
 
     try {
@@ -247,8 +272,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
           submittedAt: body.submittedAt ?? new Date().toISOString(),
         },
       });
-      if (result.outcome === "applied") metrics.deduceApplied += 1;
-      else metrics.deduceDuplicate += 1;
+      if (result.outcome === "applied") metrics.increment("deduceApplied");
+      else metrics.increment("deduceDuplicate");
       log("info", "deduce_ok", {
         requestId: meta.requestId,
         outcome: result.outcome,
@@ -258,7 +283,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<
       });
       return { ok: true, result };
     } catch (err: unknown) {
-      metrics.deduceFailed += 1;
+      metrics.increment("deduceFailed");
       if (isAgentError(err)) {
         log("warn", "deduce_agent_error", {
           requestId: meta.requestId,

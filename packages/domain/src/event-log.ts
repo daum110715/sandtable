@@ -1,5 +1,6 @@
 // DEV-007 事件日志端口 + 内存实现：只追加、不可原地修改、按顺序读取；支持按 commandId 查找。
 
+import { DomainError } from "./errors.js";
 import type { CommandId } from "./ids.js";
 import type { DeductionEvent } from "./events.js";
 
@@ -18,8 +19,14 @@ export class InMemoryEventLog implements EventLog {
   #byCommandId = new Map<string, DeductionEvent>();
 
   append(event: DeductionEvent): void {
-    if (event.commandId !== undefined && this.#byCommandId.has(event.commandId)) {
-      throw new Error(`duplicate commandId in event log: ${event.commandId}`);
+    if (
+      event.commandId !== undefined &&
+      this.#byCommandId.has(event.commandId)
+    ) {
+      throw new DomainError(
+        "duplicate",
+        `duplicate commandId in event log: ${event.commandId}`,
+      );
     }
     this.#events.push(event);
     if (event.commandId !== undefined) {
@@ -37,7 +44,9 @@ export class InMemoryEventLog implements EventLog {
   }
 
   last(): DeductionEvent | undefined {
-    return this.#events.length === 0 ? undefined : this.#events[this.#events.length - 1];
+    return this.#events.length === 0
+      ? undefined
+      : this.#events[this.#events.length - 1];
   }
 
   get length(): number {

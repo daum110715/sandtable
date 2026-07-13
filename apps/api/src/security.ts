@@ -29,7 +29,10 @@ export const validateDeduceBody = (body: {
       payload: { error: "commandId is required", code: "validation_error" },
     };
   }
-  if (commandId.length > MAX_COMMAND_ID_CHARS || !COMMAND_ID_RE.test(commandId)) {
+  if (
+    commandId.length > MAX_COMMAND_ID_CHARS ||
+    !COMMAND_ID_RE.test(commandId)
+  ) {
     return {
       ok: false,
       status: 400,
@@ -90,7 +93,10 @@ export class SlidingWindowRateLimiter {
     if (recent.length >= this.#limit) {
       this.#buckets.set(key, recent);
       const oldest = recent[0] ?? now;
-      const retryAfterSec = Math.max(1, Math.ceil((oldest + this.#windowMs - now) / 1000));
+      const retryAfterSec = Math.max(
+        1,
+        Math.ceil((oldest + this.#windowMs - now) / 1000),
+      );
       return { allowed: false, remaining: 0, retryAfterSec };
     }
     recent.push(now);
