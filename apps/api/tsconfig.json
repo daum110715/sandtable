@@ -7,7 +7,8 @@
   },
   "references": [
     { "path": "../../packages/domain" },
-    { "path": "../../packages/persistence" }
+    { "path": "../../packages/persistence" },
+    { "path": "../../packages/agents" }
   ],
   "include": ["src"]
 }

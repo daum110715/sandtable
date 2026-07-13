@@ -26,11 +26,15 @@ describe("API framework", () => {
   });
 
   it("reports ready when sqlite is available", async () => {
-    const app = buildApp({ dbPath: ":memory:" });
+    const app = buildApp({ dbPath: ":memory:", agentMode: "stub" });
     apps.push(app);
     const response = await app.inject({ method: "GET", url: "/ready" });
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toMatchObject({ status: "ready", storage: "ok" });
+    expect(response.json()).toMatchObject({
+      status: "ready",
+      storage: "ok",
+      agentMode: "stub",
+    });
   });
 
   it("deduce writes event and is idempotent; reopen keeps data", async () => {
@@ -39,7 +43,7 @@ describe("API framework", () => {
     const dbPath = join(dir, "api.sqlite");
 
     {
-      const app = buildApp({ dbPath });
+      const app = buildApp({ dbPath, agentMode: "stub" });
       apps.push(app);
 
       const first = await app.inject({
@@ -65,7 +69,7 @@ describe("API framework", () => {
     }
 
     {
-      const app = buildApp({ dbPath });
+      const app = buildApp({ dbPath, agentMode: "stub" });
       apps.push(app);
       const events = await app.inject({ method: "GET", url: "/api/v1/events" });
       expect(events.json().length).toBe(1);
@@ -74,5 +78,37 @@ describe("API framework", () => {
         state.json().worldState.resources["resource-wind"]?.attributes?.direction;
       expect(wind).toBe("西北风");
     }
+  });
+
+  it("returns 503 with retryable when agent fails without writing", async () => {
+    const { AgentError } = await import("@sandtable/agents");
+    const actor = {
+      id: "x" as never,
+      deduce: async () => {
+        throw new AgentError("timeout", "model slow", { retryable: true });
+      },
+    };
+    const recorder = {
+      id: "y" as never,
+      record: async () => ({ stateChanges: [], narrative: { text: "" } }),
+    };
+    const app = buildApp({
+      dbPath: ":memory:",
+      actor,
+      recorder,
+      agentMode: "model",
+    });
+    apps.push(app);
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/deduce",
+      payload: { commandId: "fail-1", rewriteText: "test" },
+    });
+    expect(res.statusCode).toBe(503);
+    expect(res.json()).toMatchObject({ code: "timeout", retryable: true });
+
+    const events = await app.inject({ method: "GET", url: "/api/v1/events" });
+    expect(events.json().length).toBe(0);
   });
 });

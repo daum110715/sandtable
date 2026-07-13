@@ -1,25 +1,31 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import {
   DeductionOrchestrator,
-  StubActorAgent,
-  StubRecorderAgent,
   asCommandId,
   asEventId,
   chibiInitialState,
   systemIdentity,
+  type ActorAgent,
   type DeduceResult,
+  type RecorderAgent,
   type WorldState,
 } from "@sandtable/domain";
+import { isAgentError, resolveAgents } from "@sandtable/agents";
 import { openSqlitePersistence, type SqlitePersistence } from "@sandtable/persistence";
 
 export interface BuildAppOptions {
   /** SQLite 路径；`:memory:` 或文件。默认内存，测试与无外部服务可用。 */
   readonly dbPath?: string;
+  /** 覆盖 Agent（测试注入）；默认 resolveAgents()。 */
+  readonly actor?: ActorAgent;
+  readonly recorder?: RecorderAgent;
+  readonly agentMode?: "stub" | "model";
 }
 
 export interface AppContext {
   readonly persistence: SqlitePersistence;
   readonly orchestrator: DeductionOrchestrator;
+  readonly agentMode: "stub" | "model";
 }
 
 export function buildApp(options: BuildAppOptions = {}): FastifyInstance & {
@@ -31,36 +37,48 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance & {
     initialState: chibiInitialState,
   });
 
+  const resolved =
+    options.actor !== undefined && options.recorder !== undefined
+      ? {
+          mode: options.agentMode ?? ("stub" as const),
+          actor: options.actor,
+          recorder: options.recorder,
+        }
+      : resolveAgents({
+          ...(options.agentMode !== undefined ? { mode: options.agentMode } : {}),
+        });
+
   let eventSeq = 0;
   const orchestrator = new DeductionOrchestrator({
     store: persistence.store,
     eventLog: persistence.eventLog,
-    actor: new StubActorAgent(),
-    recorder: new StubRecorderAgent(),
+    actor: resolved.actor,
+    recorder: resolved.recorder,
     runInTransaction: persistence.runInTransaction,
     nextEventId: () => {
       eventSeq += 1;
-      // 文件库跨重启：时间戳 + 序号，降低 id 冲突（1.0 单会话）
       return asEventId(`event-${Date.now()}-${eventSeq}`);
     },
   });
 
   const app = Fastify({ logger: false });
-  const context: AppContext = { persistence, orchestrator };
+  const context: AppContext = {
+    persistence,
+    orchestrator,
+    agentMode: resolved.mode,
+  };
   Object.assign(app, { context });
 
   app.addHook("onClose", async () => {
     persistence.close();
   });
 
-  /** 存活：进程在响应即可，不探测存储。 */
   app.get("/health", async () => ({
     status: "ok",
     system: systemIdentity.name,
     version: systemIdentity.protocolVersion,
   }));
 
-  /** 就绪：存储可读写探测。 */
   app.get("/ready", async (_req, reply) => {
     const storageOk = persistence.ping();
     if (!storageOk) {
@@ -72,6 +90,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance & {
     return {
       status: "ready",
       storage: "ok",
+      agentMode: context.agentMode,
       system: systemIdentity.name,
     };
   });
@@ -80,6 +99,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance & {
     name: systemIdentity.name,
     stage: "technical-prototype",
     storage: "sqlite",
+    agentMode: context.agentMode,
   }));
 
   app.get("/api/v1/world-state", async (): Promise<{ worldState: WorldState }> => ({
@@ -103,19 +123,30 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance & {
       return reply.code(400).send({ error: "rewriteText is required" });
     }
 
-    const result: DeduceResult = await orchestrator.deduce({
-      commandId: asCommandId(commandId),
-      rewrite: {
-        text: rewriteText,
-        submittedAt: req.body.submittedAt ?? new Date().toISOString(),
-      },
-    });
+    try {
+      const result: DeduceResult = await orchestrator.deduce({
+        commandId: asCommandId(commandId),
+        rewrite: {
+          text: rewriteText,
+          submittedAt: req.body.submittedAt ?? new Date().toISOString(),
+        },
+      });
 
-    return {
-      outcome: result.outcome,
-      event: result.event,
-      worldState: result.worldState,
-    };
+      return {
+        outcome: result.outcome,
+        event: result.event,
+        worldState: result.worldState,
+      };
+    } catch (err: unknown) {
+      if (isAgentError(err)) {
+        return reply.code(err.retryable ? 503 : 422).send({
+          error: err.message,
+          code: err.code,
+          retryable: err.retryable,
+        });
+      }
+      throw err;
+    }
   });
 
   return app as unknown as FastifyInstance & { readonly context: AppContext };

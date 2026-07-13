@@ -1,18 +1,20 @@
 {
-  "name": "@sandtable/api",
+  "name": "@sandtable/agents",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "dev": "tsx watch src/server.ts",
     "build": "tsc -b",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run --config ../../vitest.config.ts"
   },
   "dependencies": {
-    "@sandtable/agents": "*",
-    "@sandtable/domain": "*",
-    "@sandtable/persistence": "*",
-    "fastify": "^5.10.0"
+    "@sandtable/domain": "*"
   }
 }
